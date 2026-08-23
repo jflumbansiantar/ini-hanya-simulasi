@@ -3,7 +3,7 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Fragment, useMemo } from "react";
-import { MapContainer, TileLayer, Polyline, CircleMarker, Marker, Popup, ZoomControl } from "react-leaflet";
+import { MapContainer, TileLayer, Polyline, CircleMarker, Marker, Popup, Tooltip, ZoomControl } from "react-leaflet";
 import { CORRIDORS } from "@/lib/corridors";
 import type { Trip } from "@/lib/simulation";
 import { directionLabel } from "@/lib/simulation";
@@ -21,9 +21,16 @@ function busIcon(color: string): L.DivIcon {
   if (!icon) {
     icon = L.divIcon({
       className: "",
-      html: `<div class="bus-dot" style="background:${color}"></div>`,
-      iconSize: [12, 12],
-      iconAnchor: [6, 6],
+      html: `<svg class="bus-icon" width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="5" width="20" height="12" rx="3" fill="${color}" stroke="#fff" stroke-width="1.5"/>
+        <rect x="4.5" y="7.5" width="4" height="4" rx="0.8" fill="#fff" fill-opacity="0.85"/>
+        <rect x="10" y="7.5" width="4" height="4" rx="0.8" fill="#fff" fill-opacity="0.85"/>
+        <rect x="15.5" y="7.5" width="4" height="4" rx="0.8" fill="#fff" fill-opacity="0.85"/>
+        <circle cx="7" cy="18" r="2" fill="#1a1a1a" stroke="#fff" stroke-width="1"/>
+        <circle cx="17" cy="18" r="2" fill="#1a1a1a" stroke="#fff" stroke-width="1"/>
+      </svg>`,
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
     });
     busIconCache.set(color, icon);
   }
@@ -72,19 +79,23 @@ export default function MapView({ visibility, trips }: MapViewProps) {
 
       {trips.map((trip) => {
         const corridor = corridorById.get(trip.corridorId)!;
+        const info = (
+          <div className="tjPopup">
+            <div className="corridorLine" style={{ color: corridor.color }}>
+              {corridor.name} — {corridor.route}
+            </div>
+            <div className="dirLine">Arah: {directionLabel(corridor, trip.direction)}</div>
+            <div>
+              Antara Halte <b>{trip.fromStop}</b> – <b>{trip.toStop}</b>
+            </div>
+          </div>
+        );
         return (
           <Marker key={trip.id} position={[trip.lat, trip.lng]} icon={busIcon(corridor.color)}>
-            <Popup>
-              <div className="tjPopup">
-                <div className="corridorLine" style={{ color: corridor.color }}>
-                  {corridor.name} — {corridor.route}
-                </div>
-                <div className="dirLine">Arah: {directionLabel(corridor, trip.direction)}</div>
-                <div>
-                  Antara Halte <b>{trip.fromStop}</b> – <b>{trip.toStop}</b>
-                </div>
-              </div>
-            </Popup>
+            <Tooltip direction="top" offset={[0, -10]} opacity={1}>
+              {info}
+            </Tooltip>
+            <Popup>{info}</Popup>
           </Marker>
         );
       })}
