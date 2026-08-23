@@ -14,6 +14,13 @@ export interface Corridor {
   activeEnd: number;
   defaultVisible: boolean;
   stops: Stop[];
+  /**
+   * Diisi untuk subkoridor/rute pengumpan non-BRT (mis. "1A" turunan "k1").
+   * Tidak dihitung sebagai salah satu dari 13 koridor trunk. Royaltrans/APTB
+   * tetap di luar scope (lihat PRD §2.2) — hanya rute pengumpan reguler
+   * bermerek Transjakarta yang dimasukkan di sini.
+   */
+  parentId?: string;
 }
 
 /**
@@ -38,6 +45,126 @@ export const CORRIDORS: Corridor[] = [
       { n: "Harmoni", lat: -6.1655, lng: 106.8168 },
       { n: "Glodok", lat: -6.1500, lng: 106.8140 },
       { n: "Kota", lat: -6.1370, lng: 106.8133 },
+    ],
+  },
+  // Subkoridor/rute pengumpan Koridor 1 (non-BRT, bermerek Transjakarta).
+  // Diverifikasi dari transjakarta.co.id/rute (kode & titik akhir), koordinat
+  // halte tetap perkiraan seperti koridor trunk. Royaltrans 1K/1T sengaja
+  // tidak dimasukkan (lihat PRD §2.2 Non-Goals).
+  {
+    id: "k1a", name: "1A", route: "Pantai Maju – Balai Kota", color: "#FF6B6B", parentId: "k1",
+    headway: 15, activeStart: 300, activeEnd: 1380, defaultVisible: false,
+    stops: [
+      { n: "Pantai Maju", lat: -6.0950, lng: 106.7300 },
+      { n: "PIK", lat: -6.1090, lng: 106.7420 },
+      { n: "Pluit", lat: -6.1230, lng: 106.7920 },
+      { n: "Kota", lat: -6.1370, lng: 106.8133 },
+      { n: "Glodok", lat: -6.1500, lng: 106.8140 },
+      { n: "Harmoni", lat: -6.1655, lng: 106.8168 },
+      { n: "Monas", lat: -6.1754, lng: 106.8272 },
+      { n: "Balai Kota", lat: -6.1780, lng: 106.8290 },
+    ],
+  },
+  {
+    id: "k1b", name: "1B", route: "Stasiun Palmerah – Transport Hub Dukuh Atas", color: "#C1121F", parentId: "k1",
+    headway: 15, activeStart: 300, activeEnd: 1380, defaultVisible: false,
+    stops: [
+      { n: "Stasiun Palmerah", lat: -6.1945, lng: 106.7975 },
+      { n: "Slipi", lat: -6.1870, lng: 106.8060 },
+      { n: "Petamburan", lat: -6.1830, lng: 106.8130 },
+      { n: "Tanah Abang", lat: -6.1860, lng: 106.8130 },
+      { n: "Karet", lat: -6.2105, lng: 106.8140 },
+      { n: "Dukuh Atas", lat: -6.2010, lng: 106.8230 },
+    ],
+  },
+  {
+    id: "k1c", name: "1C", route: "Pesanggrahan – Blok M", color: "#FF8FA3", parentId: "k1",
+    headway: 15, activeStart: 300, activeEnd: 1380, defaultVisible: false,
+    stops: [
+      { n: "Pesanggrahan", lat: -6.2320, lng: 106.7580 },
+      { n: "Cipulir", lat: -6.2320, lng: 106.7660 },
+      { n: "Kebayoran Lama", lat: -6.2440, lng: 106.7830 },
+      { n: "Blok M", lat: -6.2440, lng: 106.7997 },
+    ],
+  },
+  {
+    id: "k1e", name: "1E", route: "Pondok Labu – Blok M", color: "#D00000", parentId: "k1",
+    headway: 15, activeStart: 300, activeEnd: 1380, defaultVisible: false,
+    stops: [
+      { n: "Pondok Labu", lat: -6.2970, lng: 106.7990 },
+      { n: "Fatmawati", lat: -6.2830, lng: 106.7970 },
+      { n: "Cipete", lat: -6.2700, lng: 106.7990 },
+      { n: "Gandaria", lat: -6.2500, lng: 106.7950 },
+      { n: "Blok M", lat: -6.2440, lng: 106.7997 },
+    ],
+  },
+  {
+    id: "k1f", name: "1F", route: "Stasiun Palmerah – Bundaran Senayan", color: "#E85D75", parentId: "k1",
+    headway: 15, activeStart: 300, activeEnd: 1380, defaultVisible: false,
+    stops: [
+      { n: "Stasiun Palmerah", lat: -6.1945, lng: 106.7975 },
+      { n: "Palmerah", lat: -6.1930, lng: 106.7970 },
+      { n: "Gelora Bung Karno", lat: -6.2180, lng: 106.8020 },
+      { n: "Bundaran Senayan", lat: -6.2200, lng: 106.8010 },
+    ],
+  },
+  {
+    id: "k1h", name: "1H", route: "Tanah Abang – Stasiun Gondangdia", color: "#F25C54", parentId: "k1",
+    headway: 15, activeStart: 300, activeEnd: 1380, defaultVisible: false,
+    stops: [
+      { n: "Tanah Abang", lat: -6.1860, lng: 106.8130 },
+      { n: "Kebon Sirih", lat: -6.1830, lng: 106.8230 },
+      { n: "Stasiun Gondangdia", lat: -6.1850, lng: 106.8330 },
+    ],
+  },
+  {
+    id: "k1m", name: "1M", route: "Meruya – Blok M", color: "#A4133C", parentId: "k1",
+    headway: 15, activeStart: 300, activeEnd: 1380, defaultVisible: false,
+    stops: [
+      { n: "Meruya", lat: -6.1930, lng: 106.7460 },
+      { n: "Joglo", lat: -6.2100, lng: 106.7550 },
+      { n: "Kebayoran Lama", lat: -6.2440, lng: 106.7830 },
+      { n: "Blok M", lat: -6.2440, lng: 106.7997 },
+    ],
+  },
+  {
+    id: "k1p", name: "1P", route: "Senen – Blok M", color: "#FF4D6D", parentId: "k1",
+    headway: 15, activeStart: 300, activeEnd: 1380, defaultVisible: false,
+    stops: [
+      { n: "Senen", lat: -6.1755, lng: 106.8420 },
+      { n: "Dukuh Atas", lat: -6.2010, lng: 106.8230 },
+      { n: "Senayan", lat: -6.2247, lng: 106.8017 },
+      { n: "Blok M", lat: -6.2440, lng: 106.7997 },
+    ],
+  },
+  {
+    id: "k1q", name: "1Q", route: "Rempoa – Blok M", color: "#9D0208", parentId: "k1",
+    headway: 15, activeStart: 300, activeEnd: 1380, defaultVisible: false,
+    stops: [
+      { n: "Rempoa", lat: -6.2980, lng: 106.7550 },
+      { n: "Bintaro", lat: -6.2750, lng: 106.7650 },
+      { n: "Radio Dalam", lat: -6.2650, lng: 106.7850 },
+      { n: "Blok M", lat: -6.2440, lng: 106.7997 },
+    ],
+  },
+  {
+    id: "k1r", name: "1R", route: "Senen – Tanah Abang", color: "#E76F51", parentId: "k1",
+    headway: 15, activeStart: 300, activeEnd: 1380, defaultVisible: false,
+    stops: [
+      { n: "Senen", lat: -6.1755, lng: 106.8420 },
+      { n: "Kwitang", lat: -6.1810, lng: 106.8330 },
+      { n: "Tanah Abang", lat: -6.1860, lng: 106.8130 },
+    ],
+  },
+  {
+    id: "k1w", name: "1W", route: "Blok M – Ancol", color: "#EF476F", parentId: "k1",
+    headway: 15, activeStart: 300, activeEnd: 1380, defaultVisible: false,
+    stops: [
+      { n: "Blok M", lat: -6.2440, lng: 106.7997 },
+      { n: "Bundaran HI", lat: -6.1954, lng: 106.8232 },
+      { n: "Monas", lat: -6.1754, lng: 106.8272 },
+      { n: "Kemayoran", lat: -6.1590, lng: 106.8480 },
+      { n: "Ancol", lat: -6.1250, lng: 106.8390 },
     ],
   },
   {
@@ -102,6 +229,144 @@ export const CORRIDORS: Corridor[] = [
       { n: "Pancoran", lat: -6.2440, lng: 106.8390 },
       { n: "Kuningan", lat: -6.2250, lng: 106.8330 },
       { n: "Dukuh Atas", lat: -6.2010, lng: 106.8230 },
+    ],
+  },
+  // Subkoridor/rute pengumpan Koridor 6 (non-BRT, bermerek Transjakarta).
+  // Diverifikasi dari transjakarta.co.id/rute (kode & titik akhir), koordinat
+  // halte tetap perkiraan seperti koridor trunk. Royaltrans 6P sengaja tidak
+  // dimasukkan (lihat PRD §2.2 Non-Goals).
+  {
+    id: "k6a", name: "6A", route: "Ragunan – Balai Kota via Kuningan", color: "#2A9D8F", parentId: "k6",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Ragunan", lat: -6.3010, lng: 106.8210 },
+      { n: "Warung Jati", lat: -6.2700, lng: 106.8280 },
+      { n: "Mampang", lat: -6.2480, lng: 106.8250 },
+      { n: "Kuningan", lat: -6.2250, lng: 106.8330 },
+      { n: "Epicentrum", lat: -6.2230, lng: 106.8300 },
+      { n: "Dukuh Atas", lat: -6.2010, lng: 106.8230 },
+      { n: "Balai Kota", lat: -6.1780, lng: 106.8290 },
+    ],
+  },
+  {
+    id: "k6b", name: "6B", route: "Ragunan – Balai Kota via Semanggi", color: "#52B69A", parentId: "k6",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Ragunan", lat: -6.3010, lng: 106.8210 },
+      { n: "Warung Jati", lat: -6.2700, lng: 106.8280 },
+      { n: "Mampang", lat: -6.2480, lng: 106.8250 },
+      { n: "Semanggi", lat: -6.2220, lng: 106.8080 },
+      { n: "Bundaran HI", lat: -6.1954, lng: 106.8232 },
+      { n: "Balai Kota", lat: -6.1780, lng: 106.8290 },
+    ],
+  },
+  {
+    id: "k6c", name: "6C", route: "Stasiun Tebet – Kuningan", color: "#168AAD", parentId: "k6",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Stasiun Tebet", lat: -6.2255, lng: 106.8505 },
+      { n: "Casablanca", lat: -6.2210, lng: 106.8390 },
+      { n: "Kuningan", lat: -6.2250, lng: 106.8330 },
+    ],
+  },
+  {
+    id: "k6d", name: "6D", route: "Stasiun Tebet – Bundaran Senayan", color: "#34A0A4", parentId: "k6",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Stasiun Tebet", lat: -6.2255, lng: 106.8505 },
+      { n: "Manggarai", lat: -6.2085, lng: 106.8500 },
+      { n: "Karet", lat: -6.2105, lng: 106.8140 },
+      { n: "Bundaran Senayan", lat: -6.2200, lng: 106.8010 },
+    ],
+  },
+  {
+    id: "k6h", name: "6H", route: "Senen – Lebak Bulus", color: "#1B998B", parentId: "k6",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Senen", lat: -6.1755, lng: 106.8420 },
+      { n: "Matraman", lat: -6.1990, lng: 106.8500 },
+      { n: "Kuningan", lat: -6.2250, lng: 106.8330 },
+      { n: "Mampang", lat: -6.2480, lng: 106.8250 },
+      { n: "Fatmawati", lat: -6.2830, lng: 106.7970 },
+      { n: "Lebak Bulus", lat: -6.2890, lng: 106.7750 },
+    ],
+  },
+  {
+    id: "k6k", name: "6K", route: "Kuningan – Karet", color: "#40916C", parentId: "k6",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Kuningan", lat: -6.2250, lng: 106.8330 },
+      { n: "Epicentrum", lat: -6.2230, lng: 106.8300 },
+      { n: "Karet", lat: -6.2105, lng: 106.8140 },
+    ],
+  },
+  {
+    id: "k6m", name: "6M", route: "Stasiun Manggarai – Blok M", color: "#0096C7", parentId: "k6",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Stasiun Manggarai", lat: -6.2085, lng: 106.8500 },
+      { n: "Kuningan", lat: -6.2250, lng: 106.8330 },
+      { n: "Semanggi", lat: -6.2220, lng: 106.8080 },
+      { n: "Blok M", lat: -6.2440, lng: 106.7997 },
+    ],
+  },
+  {
+    id: "k6n", name: "6N", route: "Ragunan – Blok M via Kemang", color: "#38A3A5", parentId: "k6",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Ragunan", lat: -6.3010, lng: 106.8210 },
+      { n: "Warung Jati", lat: -6.2700, lng: 106.8280 },
+      { n: "Kemang", lat: -6.2600, lng: 106.8140 },
+      { n: "Blok M", lat: -6.2440, lng: 106.7997 },
+    ],
+  },
+  {
+    id: "k6q", name: "6Q", route: "Dukuh Atas – Casablanca via Epicentrum", color: "#48CAE4", parentId: "k6",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Dukuh Atas", lat: -6.2010, lng: 106.8230 },
+      { n: "Epicentrum", lat: -6.2230, lng: 106.8300 },
+      { n: "Casablanca", lat: -6.2210, lng: 106.8390 },
+    ],
+  },
+  {
+    id: "k6t", name: "6T", route: "Pasar Minggu – Velbak via Kebon Jeruk", color: "#006D77", parentId: "k6",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Pasar Minggu", lat: -6.2830, lng: 106.8420 },
+      { n: "Fatmawati", lat: -6.2830, lng: 106.7970 },
+      { n: "Kebon Jeruk", lat: -6.1920, lng: 106.7680 },
+      { n: "Velbak", lat: -6.2420, lng: 106.7810 },
+    ],
+  },
+  {
+    id: "k6u", name: "6U", route: "Blok M – Pasar Minggu", color: "#83C5BE", parentId: "k6",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Blok M", lat: -6.2440, lng: 106.7997 },
+      { n: "Fatmawati", lat: -6.2830, lng: 106.7970 },
+      { n: "Pasar Minggu", lat: -6.2830, lng: 106.8420 },
+    ],
+  },
+  {
+    id: "k6v", name: "6V", route: "Ragunan – Senayan Bank Jakarta", color: "#0A9396", parentId: "k6",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Ragunan", lat: -6.3010, lng: 106.8210 },
+      { n: "Warung Jati", lat: -6.2700, lng: 106.8280 },
+      { n: "Mampang", lat: -6.2480, lng: 106.8250 },
+      { n: "Semanggi", lat: -6.2220, lng: 106.8080 },
+      { n: "Senayan Bank Jakarta", lat: -6.2190, lng: 106.8020 },
+    ],
+  },
+  {
+    id: "k6w", name: "6W", route: "Duren Tiga – Blok M via Bangka Raya", color: "#1D7874", parentId: "k6",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Duren Tiga", lat: -6.2450, lng: 106.8270 },
+      { n: "Bangka Raya", lat: -6.2540, lng: 106.8190 },
+      { n: "Melawai", lat: -6.2440, lng: 106.8020 },
+      { n: "Blok M", lat: -6.2440, lng: 106.7997 },
     ],
   },
   {
