@@ -18,6 +18,15 @@ interface ControlPanelProps {
 
 const CLUTTER_THRESHOLD = 70;
 
+const TRUNK_CORRIDORS = CORRIDORS.filter((c) => !c.parentId);
+const SUB_CORRIDORS_BY_PARENT = new Map<string, typeof CORRIDORS>();
+for (const c of CORRIDORS) {
+  if (!c.parentId) continue;
+  const list = SUB_CORRIDORS_BY_PARENT.get(c.parentId) ?? [];
+  list.push(c);
+  SUB_CORRIDORS_BY_PARENT.set(c.parentId, list);
+}
+
 export default function ControlPanel({
   simMinutes,
   speedIndex,
@@ -37,7 +46,7 @@ export default function ControlPanel({
       </div>
       <div className="panelHeader">
         <h1>Transjakarta Line Simulator</h1>
-        <div className="route">Simulasi 13 koridor trunk BRT · jam terkompresi</div>
+        <div className="route">Simulasi {TRUNK_CORRIDORS.length} koridor trunk BRT · jam terkompresi</div>
         <div className="clockRow">
           <div className="clock">{formatClock(simMinutes)}</div>
           <div className="clocklabel">jam simulasi</div>
@@ -70,7 +79,7 @@ export default function ControlPanel({
         )}
       </div>
       <div className="corridorToolbar">
-        <span>13 Koridor</span>
+        <span>{TRUNK_CORRIDORS.length} Koridor</span>
         <div className="toolbarBtns">
           <button className="miniBtn" onClick={() => onSetAll(true)}>
             Semua
@@ -81,26 +90,51 @@ export default function ControlPanel({
         </div>
       </div>
       <div className="corridorList">
-        {CORRIDORS.map((c) => {
+        {TRUNK_CORRIDORS.map((c) => {
           const meta = CORRIDOR_META[c.id];
+          const subCorridors = SUB_CORRIDORS_BY_PARENT.get(c.id) ?? [];
           return (
-            <label className="corridorRow" key={c.id}>
-              <input
-                type="checkbox"
-                checked={visibility[c.id] ?? false}
-                onChange={(e) => onToggleCorridor(c.id, e.target.checked)}
-              />
-              <div className="swatch" style={{ background: c.color }} />
-              <div className="corridorInfo">
-                <div className="name">
-                  {c.name} · {c.route}
+            <div key={c.id}>
+              <label className="corridorRow">
+                <input
+                  type="checkbox"
+                  checked={visibility[c.id] ?? false}
+                  onChange={(e) => onToggleCorridor(c.id, e.target.checked)}
+                />
+                <div className="swatch" style={{ background: c.color }} />
+                <div className="corridorInfo">
+                  <div className="name">
+                    {c.name} · {c.route}
+                  </div>
+                  <div className="meta">
+                    {meta.totalKm.toFixed(1)} km · ~{Math.round(meta.durationMin)} menit · headway{" "}
+                    {c.headway} mnt
+                  </div>
                 </div>
-                <div className="meta">
-                  {meta.totalKm.toFixed(1)} km · ~{Math.round(meta.durationMin)} menit · headway{" "}
-                  {c.headway} mnt
-                </div>
-              </div>
-            </label>
+              </label>
+              {subCorridors.map((sc) => {
+                const scMeta = CORRIDOR_META[sc.id];
+                return (
+                  <label className="corridorRow sub" key={sc.id}>
+                    <input
+                      type="checkbox"
+                      checked={visibility[sc.id] ?? false}
+                      onChange={(e) => onToggleCorridor(sc.id, e.target.checked)}
+                    />
+                    <div className="swatch" style={{ background: sc.color }} />
+                    <div className="corridorInfo">
+                      <div className="name">
+                        {sc.name} · {sc.route}
+                      </div>
+                      <div className="meta">
+                        {scMeta.totalKm.toFixed(1)} km · ~{Math.round(scMeta.durationMin)} menit ·
+                        headway {sc.headway} mnt
+                      </div>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
           );
         })}
       </div>
