@@ -74,7 +74,7 @@ body {
   top: 14px;
   right: 14px;
   bottom: 14px;
-  width: 320px;
+  width: 360px;
   z-index: 900;
   background: var(--panel);
   border: 1px solid var(--panel-border);
@@ -212,18 +212,65 @@ body {
 .corridorRow {
   display: flex;
   align-items: center;
+  gap: 4px;
+  border-radius: 8px;
+}
+.corridorRowMain {
+  display: flex;
+  align-items: center;
   gap: 10px;
+  flex: 1;
+  min-width: 0;
   padding: 7px 6px;
   border-radius: 8px;
   cursor: pointer;
 }
-.corridorRow:hover {
+.corridorRowMain:hover {
   background: rgba(255, 255, 255, 0.05);
 }
 .corridorRow.sub {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-left: 20px;
   padding: 5px 6px;
+  border-radius: 8px;
   opacity: 0.85;
+  cursor: pointer;
+}
+.corridorRow.sub:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.subFoldBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  color: var(--text-dim);
+  font-size: 10px;
+  padding: 4px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 4px;
+}
+.subFoldBtn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.subFoldBtn.expanded {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.subFoldChevron {
+  display: inline-block;
+  font-size: 9px;
+  transition: transform 0.15s ease;
+}
+.subFoldBtn.expanded .subFoldChevron {
+  transform: rotate(180deg);
 }
 .corridorRow.sub .swatch {
   width: 8px;

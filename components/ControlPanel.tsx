@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { CORRIDORS } from "@/lib/corridors";
 import { CORRIDOR_META } from "@/lib/corridorMeta";
 import { SPEED_OPTIONS } from "@/lib/useSimulationClock";
@@ -39,6 +40,11 @@ export default function ControlPanel({
   collapsed,
   onToggleCollapsed,
 }: ControlPanelProps) {
+  const [expandedSubs, setExpandedSubs] = useState<Record<string, boolean>>({});
+  const toggleSubExpanded = (id: string) => {
+    setExpandedSubs((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   return (
     <div className={`panel${collapsed ? " collapsed" : ""}`}>
       <div className="panelHandle" onClick={onToggleCollapsed}>
@@ -93,26 +99,42 @@ export default function ControlPanel({
         {TRUNK_CORRIDORS.map((c) => {
           const meta = CORRIDOR_META[c.id];
           const subCorridors = SUB_CORRIDORS_BY_PARENT.get(c.id) ?? [];
+          const hasSubs = subCorridors.length > 0;
+          const isExpanded = expandedSubs[c.id] ?? false;
           return (
             <div key={c.id}>
-              <label className="corridorRow">
-                <input
-                  type="checkbox"
-                  checked={visibility[c.id] ?? false}
-                  onChange={(e) => onToggleCorridor(c.id, e.target.checked)}
-                />
-                <div className="swatch" style={{ background: c.color }} />
-                <div className="corridorInfo">
-                  <div className="name">
-                    {c.name} · {c.route}
+              <div className="corridorRow">
+                <label className="corridorRowMain">
+                  <input
+                    type="checkbox"
+                    checked={visibility[c.id] ?? false}
+                    onChange={(e) => onToggleCorridor(c.id, e.target.checked)}
+                  />
+                  <div className="swatch" style={{ background: c.color }} />
+                  <div className="corridorInfo">
+                    <div className="name">
+                      {c.name} · {c.route}
+                    </div>
+                    <div className="meta">
+                      {meta.totalKm.toFixed(1)} km · ~{Math.round(meta.durationMin)} menit · headway{" "}
+                      {c.headway} mnt
+                    </div>
                   </div>
-                  <div className="meta">
-                    {meta.totalKm.toFixed(1)} km · ~{Math.round(meta.durationMin)} menit · headway{" "}
-                    {c.headway} mnt
-                  </div>
-                </div>
-              </label>
-              {subCorridors.map((sc) => {
+                </label>
+                {hasSubs && (
+                  <button
+                    type="button"
+                    className={`subFoldBtn${isExpanded ? " expanded" : ""}`}
+                    onClick={() => toggleSubExpanded(c.id)}
+                    aria-label={`${isExpanded ? "Sembunyikan" : "Tampilkan"} subkoridor ${c.name}`}
+                    title={`${subCorridors.length} subkoridor`}
+                  >
+                    <span className="subFoldCount">{subCorridors.length}</span>
+                    <span className="subFoldChevron">▾</span>
+                  </button>
+                )}
+              </div>
+              {hasSubs && isExpanded && subCorridors.map((sc) => {
                 const scMeta = CORRIDOR_META[sc.id];
                 return (
                   <label className="corridorRow sub" key={sc.id}>
