@@ -5,6 +5,7 @@ import L from "leaflet";
 import { Fragment, useMemo } from "react";
 import { MapContainer, TileLayer, Polyline, CircleMarker, Marker, Popup, Tooltip, ZoomControl } from "react-leaflet";
 import { CORRIDORS } from "@/lib/corridors";
+import { CORRIDOR_PATHS } from "@/lib/corridorPaths";
 import type { Trip } from "@/lib/simulation";
 import { directionLabel } from "@/lib/simulation";
 
@@ -63,7 +64,7 @@ export default function MapView({ visibility, trips }: MapViewProps) {
       {visibleCorridors.map((c) => (
         <Fragment key={c.id}>
           <Polyline
-            positions={c.stops.map((s) => [s.lat, s.lng])}
+            positions={(CORRIDOR_PATHS[c.id]?.forward.points ?? c.stops).map((s) => [s.lat, s.lng])}
             pathOptions={{ color: c.color, weight: 3, opacity: 0.55 }}
           />
           {c.stops.map((s, i) => (
