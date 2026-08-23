@@ -103,8 +103,6 @@ export const CORRIDORS: Corridor[] = [
     headway: 15, activeStart: 300, activeEnd: 1380, defaultVisible: false,
     stops: [
       { n: "Stasiun Palmerah", lat: -6.1945, lng: 106.7975 },
-      { n: "Palmerah", lat: -6.1930, lng: 106.7970 },
-      { n: "Gelora Bung Karno", lat: -6.2180, lng: 106.8020 },
       { n: "Bundaran Senayan", lat: -6.2200, lng: 106.8010 },
     ],
   },
@@ -296,7 +294,7 @@ export const CORRIDORS: Corridor[] = [
     headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
     stops: [
       { n: "Kuningan", lat: -6.2250, lng: 106.8330 },
-      { n: "Epicentrum", lat: -6.2230, lng: 106.8300 },
+      { n: "Karet Kuningan", lat: -6.2135, lng: 106.8285 },
       { n: "Karet", lat: -6.2105, lng: 106.8140 },
     ],
   },
