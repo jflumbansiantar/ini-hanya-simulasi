@@ -412,6 +412,178 @@ body {
   cursor: pointer;
 }
 
+/* ---- pencari rute halte-ke-halte ---- */
+.routeFinder {
+  position: absolute;
+  top: 62px;
+  left: 14px;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.routeFinderToggle {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+.routeFinderToggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.routeFinderCard {
+  width: min(320px, calc(100vw - 28px));
+  max-height: calc(100vh - 92px);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.routeFinderHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--panel-border);
+  font-size: 13px;
+  font-weight: 700;
+}
+.routeFinderClose {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+.routeFinderClose:hover {
+  color: var(--text);
+}
+.routeFinderForm {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--panel-border);
+  flex-wrap: wrap;
+}
+.routeFinderField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 110px;
+}
+.routeFinderField span {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.routeFinderField input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12.5px;
+  padding: 7px 9px;
+}
+.routeFinderField input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.routeFinderSwap {
+  flex: none;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  color: var(--text-dim);
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.routeFinderSwap:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.routeFinderSubmit {
+  width: 100%;
+  margin-top: 2px;
+  padding: 8px 0;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #04121a;
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.routeFinderMsg {
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.routeFinderResult {
+  overflow-y: auto;
+  padding: 10px 14px 14px;
+}
+.routeFinderSummary {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.routeFinderSteps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.routeFinderSteps li {
+  border-left: 2px solid var(--panel-border);
+  padding-left: 10px;
+}
+.routeFinderStepHead {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 3px;
+}
+.routeFinderSwatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+.routeFinderCorridorName {
+  font-size: 12px;
+  font-weight: 700;
+}
+.routeFinderStepBody {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.routeFinderStepMeta {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  margin-top: 1px;
+}
+
 /* ---- mobile / responsive ---- */
 .panelHandle {
   display: none;
@@ -457,5 +629,11 @@ body {
   }
   .badge .sub {
     display: none;
+  }
+  .routeFinder {
+    top: 56px;
+  }
+  .routeFinderCard {
+    max-height: 42vh;
   }
 }
