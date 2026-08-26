@@ -609,6 +609,123 @@ export const CORRIDORS: Corridor[] = [
       { n: "Kampung Melayu", lat: -6.2245, lng: 106.8600 },
     ],
   },
+  // Subkoridor/rute pengumpan Koridor 7 (non-BRT, bermerek Transjakarta).
+  // Diverifikasi dari transjakarta.co.id/rute (kode & titik akhir), koordinat
+  // halte tetap perkiraan seperti koridor trunk. Tidak ada rute Royaltrans
+  // di bawah Koridor 7.
+  {
+    id: "k7a", name: "7A", route: "Kampung Rambutan – Lebak Bulus", color: "#5D7A9E", parentId: "k7",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Kampung Rambutan", lat: -6.3040, lng: 106.8620 },
+      { n: "Ragunan", lat: -6.3010, lng: 106.8210 },
+      { n: "Lebak Bulus", lat: -6.2890, lng: 106.7750 },
+    ],
+  },
+  {
+    id: "k7b", name: "7B", route: "Kampung Rambutan – Blok M", color: "#6B8CAF", parentId: "k7",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Kampung Rambutan", lat: -6.3040, lng: 106.8620 },
+      { n: "Pasar Minggu", lat: -6.2830, lng: 106.8420 },
+      { n: "Blok M", lat: -6.2440, lng: 106.7997 },
+    ],
+  },
+  {
+    id: "k7c", name: "7C", route: "Cibubur – Cawang Cililitan", color: "#4C6685", parentId: "k7",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Cibubur", lat: -6.3690, lng: 106.8930 },
+      { n: "Cawang Cililitan", lat: -6.2500, lng: 106.8630 },
+    ],
+  },
+  {
+    id: "k7d", name: "7D", route: "TMII – Pancoran", color: "#7A9BC2", parentId: "k7",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "TMII", lat: -6.3025, lng: 106.8951 },
+      { n: "Cawang", lat: -6.2430, lng: 106.8620 },
+      { n: "Pancoran", lat: -6.2440, lng: 106.8390 },
+    ],
+  },
+  {
+    id: "k7e", name: "7E", route: "Kampung Rambutan – Ragunan", color: "#3D5570", parentId: "k7",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Kampung Rambutan", lat: -6.3040, lng: 106.8620 },
+      { n: "Ragunan", lat: -6.3010, lng: 106.8210 },
+    ],
+  },
+  {
+    id: "k7f", name: "7F", route: "Kampung Rambutan – Juanda via Cempaka Putih", color: "#8FADD1", parentId: "k7",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Kampung Rambutan", lat: -6.3040, lng: 106.8620 },
+      { n: "Cempaka Putih", lat: -6.1810, lng: 106.8660 },
+      { n: "Juanda", lat: -6.1670, lng: 106.8300 },
+    ],
+  },
+  {
+    id: "k7p", name: "7P", route: "Pondok Kelapa – Cawang Cililitan", color: "#2E455E", parentId: "k7",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Pondok Kelapa", lat: -6.2280, lng: 106.9080 },
+      { n: "Cawang Cililitan", lat: -6.2500, lng: 106.8630 },
+    ],
+  },
+  {
+    id: "k7q", name: "7Q", route: "Blok M – Cawang Cililitan", color: "#A3C0E0", parentId: "k7",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Blok M", lat: -6.2440, lng: 106.7997 },
+      { n: "Pancoran", lat: -6.2440, lng: 106.8390 },
+      { n: "Cawang Cililitan", lat: -6.2500, lng: 106.8630 },
+    ],
+  },
+  {
+    id: "k7r", name: "7R", route: "Cibubur – Pluit", color: "#55708F", parentId: "k7",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Cibubur", lat: -6.3690, lng: 106.8930 },
+      { n: "Cawang", lat: -6.2430, lng: 106.8620 },
+      { n: "Semanggi", lat: -6.2220, lng: 106.8080 },
+      { n: "Pluit", lat: -6.1230, lng: 106.7920 },
+    ],
+  },
+  {
+    id: "k7t", name: "7T", route: "Cibubur – Tanjung Priok", color: "#6F94BC", parentId: "k7",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Cibubur", lat: -6.3690, lng: 106.8930 },
+      { n: "Cawang", lat: -6.2430, lng: 106.8620 },
+      { n: "Tanjung Priok", lat: -6.1110, lng: 106.8800 },
+    ],
+  },
+  {
+    id: "k7u", name: "7U", route: "Cibubur – Ancol", color: "#405C7A", parentId: "k7",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Cibubur", lat: -6.3690, lng: 106.8930 },
+      { n: "Cawang", lat: -6.2430, lng: 106.8620 },
+      { n: "Ancol", lat: -6.1250, lng: 106.8390 },
+    ],
+  },
+  {
+    id: "k7v", name: "7V", route: "Cibubur – Kampung Rambutan", color: "#83A6CC", parentId: "k7",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Cibubur", lat: -6.3690, lng: 106.8930 },
+      { n: "Kampung Rambutan", lat: -6.3040, lng: 106.8620 },
+    ],
+  },
+  {
+    id: "k7w", name: "7W", route: "Cawang – Stasiun Kereta Cepat Halim", color: "#365174", parentId: "k7",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Cawang", lat: -6.2430, lng: 106.8620 },
+      { n: "Stasiun Kereta Cepat Halim", lat: -6.2660, lng: 106.8890 },
+    ],
+  },
   {
     id: "k8", name: "Koridor 8", route: "Lebak Bulus – Pasar Baru", color: "#277DA1",
     headway: 9, activeStart: 300, activeEnd: 1320, defaultVisible: false,
@@ -623,6 +740,65 @@ export const CORRIDORS: Corridor[] = [
       { n: "Petamburan", lat: -6.1830, lng: 106.8130 },
       { n: "Harmoni", lat: -6.1655, lng: 106.8168 },
       { n: "Pasar Baru", lat: -6.1660, lng: 106.8330 },
+    ],
+  },
+  // Subkoridor/rute pengumpan Koridor 8 (non-BRT, bermerek Transjakarta).
+  // Diverifikasi dari transjakarta.co.id/rute (kode & titik akhir), koordinat
+  // halte tetap perkiraan seperti koridor trunk. Rute "8A: Jelambar – Pasar
+  // Baru" muncul di Wikipedia tapi TIDAK ada di listing langsung
+  // transjakarta.co.id/rute saat diverifikasi — sengaja tidak dimasukkan.
+  // Tidak ada rute Royaltrans di bawah Koridor 8.
+  {
+    id: "k8c", name: "8C", route: "Kebayoran Lama – Tanah Abang", color: "#1A6E96", parentId: "k8",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Kebayoran Lama", lat: -6.2440, lng: 106.7830 },
+      { n: "Palmerah", lat: -6.1930, lng: 106.7970 },
+      { n: "Tanah Abang", lat: -6.1860, lng: 106.8130 },
+    ],
+  },
+  {
+    id: "k8d", name: "8D", route: "Meruya Selatan – Blok M", color: "#2E8FBF", parentId: "k8",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Meruya Selatan", lat: -6.2050, lng: 106.7500 },
+      { n: "Kebayoran Lama", lat: -6.2440, lng: 106.7830 },
+      { n: "Blok M", lat: -6.2440, lng: 106.7997 },
+    ],
+  },
+  {
+    id: "k8e", name: "8E", route: "Bintaro – Blok M", color: "#0F5A80", parentId: "k8",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Bintaro", lat: -6.2750, lng: 106.7650 },
+      { n: "Kebayoran Lama", lat: -6.2440, lng: 106.7830 },
+      { n: "Blok M", lat: -6.2440, lng: 106.7997 },
+    ],
+  },
+  {
+    id: "k8k", name: "8K", route: "Batusari – Grogol", color: "#4FA8D1", parentId: "k8",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Batusari", lat: -6.2950, lng: 106.7350 },
+      { n: "Kebayoran Lama", lat: -6.2440, lng: 106.7830 },
+      { n: "Grogol", lat: -6.1630, lng: 106.7900 },
+    ],
+  },
+  {
+    id: "k8m", name: "8M", route: "Tanah Abang – Tanjung Duren", color: "#10495F", parentId: "k8",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Tanah Abang", lat: -6.1860, lng: 106.8130 },
+      { n: "Tanjung Duren", lat: -6.1780, lng: 106.7920 },
+    ],
+  },
+  {
+    id: "k8n", name: "8N", route: "Kebayoran – Petamburan via Asia Afrika", color: "#6BB8DE", parentId: "k8",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Kebayoran", lat: -6.2430, lng: 106.7940 },
+      { n: "Asia Afrika", lat: -6.2170, lng: 106.8010 },
+      { n: "Petamburan", lat: -6.1830, lng: 106.8130 },
     ],
   },
   {
