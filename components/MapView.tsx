@@ -8,10 +8,12 @@ import { CORRIDORS } from "@/lib/corridors";
 import { CORRIDOR_PATHS } from "@/lib/corridorPaths";
 import type { Trip } from "@/lib/simulation";
 import { directionLabel } from "@/lib/simulation";
+import type { RouteResult } from "@/lib/routeFinder";
 
 interface MapViewProps {
   visibility: Record<string, boolean>;
   trips: Trip[];
+  route?: RouteResult | null;
 }
 
 const corridorById = new Map(CORRIDORS.map((c) => [c.id, c]));
@@ -38,7 +40,7 @@ function busIcon(color: string): L.DivIcon {
   return icon;
 }
 
-export default function MapView({ visibility, trips }: MapViewProps) {
+export default function MapView({ visibility, trips, route }: MapViewProps) {
   const visibleCorridors = useMemo(() => CORRIDORS.filter((c) => visibility[c.id]), [visibility]);
 
   return (
@@ -100,6 +102,55 @@ export default function MapView({ visibility, trips }: MapViewProps) {
           </Marker>
         );
       })}
+
+      {route && route.steps.length > 0 && (
+        <Fragment>
+          {route.steps.map((step, i) => (
+            <Fragment key={i}>
+              <Polyline
+                positions={step.path.map((p) => [p.lat, p.lng])}
+                pathOptions={{ color: "#ffffff", weight: 8, opacity: 0.45 }}
+              />
+              <Polyline
+                positions={step.path.map((p) => [p.lat, p.lng])}
+                pathOptions={{ color: step.corridorColor, weight: 5, opacity: 0.95 }}
+              />
+            </Fragment>
+          ))}
+          {route.steps.map((step, i) => (
+            <CircleMarker
+              key={`board-${i}`}
+              center={[step.path[0].lat, step.path[0].lng]}
+              radius={7}
+              pathOptions={{
+                color: "#fff",
+                weight: 2,
+                fillColor: i === 0 ? "#2ecc71" : "#f9c74f",
+                fillOpacity: 1,
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -8]} permanent>
+                {i === 0 ? `Naik di ${step.boardStop}` : `Transfer ke ${step.corridorName} di ${step.boardStop}`}
+              </Tooltip>
+            </CircleMarker>
+          ))}
+          {(() => {
+            const last = route.steps[route.steps.length - 1];
+            const p = last.path[last.path.length - 1];
+            return (
+              <CircleMarker
+                center={[p.lat, p.lng]}
+                radius={7}
+                pathOptions={{ color: "#fff", weight: 2, fillColor: "#e63946", fillOpacity: 1 }}
+              >
+                <Tooltip direction="top" offset={[0, -8]} permanent>
+                  Turun di {last.alightStop}
+                </Tooltip>
+              </CircleMarker>
+            );
+          })()}
+        </Fragment>
+      )}
     </MapContainer>
   );
 }

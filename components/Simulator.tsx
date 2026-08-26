@@ -5,10 +5,12 @@ import dynamic from "next/dynamic";
 import { CORRIDORS } from "@/lib/corridors";
 import { CORRIDOR_META } from "@/lib/corridorMeta";
 import { getActiveTrips, type Trip } from "@/lib/simulation";
+import type { RouteResult } from "@/lib/routeFinder";
 import { useSimulationClock } from "@/lib/useSimulationClock";
 import Badge from "./Badge";
 import ControlPanel from "./ControlPanel";
 import OnboardingModal from "./OnboardingModal";
+import RouteFinder from "./RouteFinder";
 
 // MapView memuat Leaflet yang butuh `window` — dynamic-import tanpa SSR
 // harus dilakukan dari dalam Client Component, bukan Server Component.
@@ -72,10 +74,13 @@ export default function Simulator() {
 
   const corridorsOperating = useMemo(() => new Set(trips.map((t) => t.corridorId)).size, [trips]);
 
+  const [route, setRoute] = useState<RouteResult | null>(null);
+
   return (
     <div className="mapRoot">
-      <MapView visibility={visibility} trips={trips} />
+      <MapView visibility={visibility} trips={trips} route={route} />
       <Badge />
+      <RouteFinder onRouteChange={setRoute} />
       <ControlPanel
         simMinutes={simMinutes}
         speedIndex={speedIndex}
