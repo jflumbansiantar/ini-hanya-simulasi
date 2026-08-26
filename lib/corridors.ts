@@ -829,6 +829,36 @@ export const CORRIDORS: Corridor[] = [
       { n: "PGC (Cililitan)", lat: -6.2600, lng: 106.8620 },
     ],
   },
+  // Subkoridor/rute pengumpan Koridor 10 (non-BRT, bermerek Transjakarta).
+  // Diverifikasi dari transjakarta.co.id/rute (kode & titik akhir), koordinat
+  // halte tetap perkiraan seperti koridor trunk. Tidak ada rute Royaltrans
+  // di bawah Koridor 10.
+  {
+    id: "k10a", name: "10A", route: "Rusun Marunda – Tanjung Priok", color: "#D662B0", parentId: "k10",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Marunda", lat: -6.1050, lng: 106.9500 },
+      { n: "Tanjung Priok", lat: -6.1110, lng: 106.8800 },
+    ],
+  },
+  {
+    id: "k10b", name: "10B", route: "Rusun Cipinang Besar Selatan – Penas Kalimalang", color: "#9A1750", parentId: "k10",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Cipinang Besar Selatan", lat: -6.2150, lng: 106.8750 },
+      { n: "Penas Kalimalang", lat: -6.2350, lng: 106.9150 },
+    ],
+  },
+  {
+    id: "k10h", name: "10H", route: "Tanjung Priok – Bundaran Senayan", color: "#E85DA0", parentId: "k10",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Tanjung Priok", lat: -6.1110, lng: 106.8800 },
+      { n: "Ahmad Yani", lat: -6.1780, lng: 106.8720 },
+      { n: "Semanggi", lat: -6.2220, lng: 106.8080 },
+      { n: "Bundaran Senayan", lat: -6.2200, lng: 106.8010 },
+    ],
+  },
   {
     id: "k11", name: "Koridor 11", route: "Kampung Melayu – Pulo Gebang", color: "#7209B7",
     headway: 12, activeStart: 300, activeEnd: 1320, defaultVisible: false,
@@ -839,6 +869,77 @@ export const CORRIDORS: Corridor[] = [
       { n: "Buaran", lat: -6.2000, lng: 106.9100 },
       { n: "Malaka", lat: -6.1900, lng: 106.9200 },
       { n: "Pulo Gebang", lat: -6.1830, lng: 106.9280 },
+    ],
+  },
+  // Subkoridor/rute pengumpan Koridor 11 (non-BRT, bermerek Transjakarta).
+  // Diverifikasi dari transjakarta.co.id/rute (kode & titik akhir), koordinat
+  // halte tetap perkiraan seperti koridor trunk. Tidak ada rute Royaltrans
+  // di bawah Koridor 11.
+  {
+    id: "k11b", name: "11B", route: "Rusun Ujung Menteng – Penggilingan", color: "#9D4EDD", parentId: "k11",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Ujung Menteng", lat: -6.1700, lng: 106.9600 },
+      { n: "Penggilingan", lat: -6.1900, lng: 106.9350 },
+    ],
+  },
+  {
+    id: "k11c", name: "11C", route: "Rusun Pulo Gebang – Penggilingan", color: "#5A189A", parentId: "k11",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Pulo Gebang", lat: -6.1800, lng: 106.9330 },
+      { n: "Penggilingan", lat: -6.1900, lng: 106.9350 },
+    ],
+  },
+  {
+    id: "k11d", name: "11D", route: "Pulo Gebang – Pulo Gadung via PIK", color: "#7B2CBF", parentId: "k11",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Pulo Gebang", lat: -6.1830, lng: 106.9280 },
+      { n: "Pulogadung", lat: -6.1890, lng: 106.9070 },
+    ],
+  },
+  {
+    id: "k11m", name: "11M", route: "Rusun Rawa Bebek – Bukit Duri", color: "#C77DFF", parentId: "k11",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Rawa Bebek", lat: -6.1550, lng: 106.9350 },
+      { n: "Jatinegara", lat: -6.2140, lng: 106.8700 },
+      { n: "Bukit Duri", lat: -6.2170, lng: 106.8560 },
+    ],
+  },
+  {
+    id: "k11p", name: "11P", route: "Rusun Pondok Bambu – Walikota Jakarta Timur", color: "#3C096C", parentId: "k11",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Pondok Bambu", lat: -6.2280, lng: 106.9020 },
+      { n: "Walikota Jakarta Timur", lat: -6.2140, lng: 106.8720 },
+    ],
+  },
+  {
+    id: "k11q", name: "11Q", route: "Kampung Melayu – Pulo Gebang via BKT", color: "#B298DC", parentId: "k11",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Kampung Melayu", lat: -6.2245, lng: 106.8600 },
+      { n: "Cipinang", lat: -6.1970, lng: 106.8700 },
+      { n: "Klender", lat: -6.1980, lng: 106.8870 },
+      { n: "Pulo Gebang", lat: -6.1830, lng: 106.9280 },
+    ],
+  },
+  {
+    id: "k11r", name: "11R", route: "Rusun Cakung KM2 – Penggilingan", color: "#560BAD", parentId: "k11",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Cakung KM2", lat: -6.1650, lng: 106.9480 },
+      { n: "Penggilingan", lat: -6.1900, lng: 106.9350 },
+    ],
+  },
+  {
+    id: "k11w", name: "11W", route: "Stasiun Klender – Pulo Gadung", color: "#6247AA", parentId: "k11",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Stasiun Klender", lat: -6.1980, lng: 106.8870 },
+      { n: "Pulogadung", lat: -6.1890, lng: 106.9070 },
     ],
   },
   {
@@ -853,6 +954,58 @@ export const CORRIDORS: Corridor[] = [
       { n: "Tanjung Priok", lat: -6.1110, lng: 106.8800 },
     ],
   },
+  // Subkoridor/rute pengumpan Koridor 12 (non-BRT, bermerek Transjakarta).
+  // Diverifikasi dari transjakarta.co.id/rute (kode & titik akhir), koordinat
+  // halte tetap perkiraan seperti koridor trunk. Tidak ada rute Royaltrans
+  // di bawah Koridor 12.
+  {
+    id: "k12a", name: "12A", route: "Kota – Kaliadem", color: "#F9E784", parentId: "k12",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Kota", lat: -6.1370, lng: 106.8133 },
+      { n: "Kaliadem", lat: -6.1000, lng: 106.7350 },
+    ],
+  },
+  {
+    id: "k12b", name: "12B", route: "Pluit – Senen", color: "#FCE300", parentId: "k12",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Pluit", lat: -6.1230, lng: 106.7920 },
+      { n: "Senen", lat: -6.1755, lng: 106.8420 },
+    ],
+  },
+  {
+    id: "k12c", name: "12C", route: "Rusun Waduk Pluit – Penjaringan", color: "#FFF275", parentId: "k12",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Waduk Pluit", lat: -6.1280, lng: 106.7950 },
+      { n: "Penjaringan", lat: -6.1220, lng: 106.8080 },
+    ],
+  },
+  {
+    id: "k12f", name: "12F", route: "Rusun Marunda – Rusun Waduk Pluit", color: "#F4D35E", parentId: "k12",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Marunda", lat: -6.1050, lng: 106.9500 },
+      { n: "Rusun Waduk Pluit", lat: -6.1280, lng: 106.7950 },
+    ],
+  },
+  {
+    id: "k12h", name: "12H", route: "Rusun Penjaringan – Penjaringan", color: "#F0C808", parentId: "k12",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Penjaringan", lat: -6.1180, lng: 106.8050 },
+      { n: "Penjaringan", lat: -6.1220, lng: 106.8080 },
+    ],
+  },
+  {
+    id: "k12p", name: "12P", route: "Stasiun LRT Pegangsaan – JIS", color: "#FFC93C", parentId: "k12",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Stasiun LRT Pegangsaan", lat: -6.1550, lng: 106.9000 },
+      { n: "JIS", lat: -6.1250, lng: 106.8700 },
+    ],
+  },
   {
     id: "k13", name: "Koridor 13", route: "Ciledug – Kapten Tendean", color: "#00F5D4",
     headway: 6, activeStart: 280, activeEnd: 1380, defaultVisible: true,
@@ -863,6 +1016,32 @@ export const CORRIDORS: Corridor[] = [
       { n: "Seskoal", lat: -6.2530, lng: 106.7900 },
       { n: "Adam Malik", lat: -6.2540, lng: 106.8010 },
       { n: "Kapten Tendean", lat: -6.2380, lng: 106.8210 },
+    ],
+  },
+  // Subkoridor/rute pengumpan Koridor 13 (non-BRT, bermerek Transjakarta).
+  // Diverifikasi dari transjakarta.co.id/rute (kode & titik akhir), koordinat
+  // halte tetap perkiraan seperti koridor trunk. Rute "L13E: Puri Beta –
+  // Flyover Kuningan (Express)" sengaja TIDAK dimasukkan — itu varian
+  // limited-stop dari 13E dengan titik akhir sama persis, bukan rute fisik
+  // baru, dan model data proyek ini tidak merepresentasikan pola berhenti
+  // per-halte. Royaltrans B13/B14 (Summarecon Bekasi) tetap di luar scope
+  // (lihat Non-Goals §2.2), jadi tidak dimasukkan.
+  {
+    id: "k13b", name: "13B", route: "Puri Beta – Pancoran", color: "#00B8A9", parentId: "k13",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Puri Beta", lat: -6.2350, lng: 106.7150 },
+      { n: "Kebayoran Lama", lat: -6.2440, lng: 106.7830 },
+      { n: "Pancoran", lat: -6.2440, lng: 106.8390 },
+    ],
+  },
+  {
+    id: "k13e", name: "13E", route: "Puri Beta – Flyover Kuningan", color: "#5EFCE8", parentId: "k13",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Puri Beta", lat: -6.2350, lng: 106.7150 },
+      { n: "Kebayoran Lama", lat: -6.2440, lng: 106.7830 },
+      { n: "Flyover Kuningan", lat: -6.2200, lng: 106.8300 },
     ],
   },
 ];
