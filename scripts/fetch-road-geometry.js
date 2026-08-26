@@ -23,6 +23,7 @@ const MAX_EXCESS_KM = 2.5;
 const REQUEST_DELAY_MS = 120; // be polite to the shared public demo server
 
 function parseCorridors(src) {
+  src = src.replace(/\r\n/g, "\n");
   const blocks = src.split(/\n  \{\n?    id: /).slice(1);
   const corridors = [];
   for (const b of blocks) {

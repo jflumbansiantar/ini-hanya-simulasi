@@ -178,6 +178,69 @@ export const CORRIDORS: Corridor[] = [
       { n: "Pulogadung", lat: -6.1890, lng: 106.9070 },
     ],
   },
+  // Subkoridor/rute pengumpan Koridor 2 (non-BRT, bermerek Transjakarta).
+  // Diverifikasi dari transjakarta.co.id/rute (kode & titik akhir), koordinat
+  // halte tetap perkiraan seperti koridor trunk. Rute "2C: Balai Kota –
+  // JIEXPO Kemayoran" sengaja TIDAK dimasukkan — itu layanan musiman khusus
+  // Jakarta Fair (jam operasi terbatas ke periode event), bukan rute harian
+  // permanen seperti subkoridor lain di sini, jadi bukan Royaltrans tapi
+  // tetap beda kelas layanan. Tidak ada rute Royaltrans di bawah Koridor 2.
+  {
+    id: "k2a", name: "2A", route: "Pulo Gadung – Rawa Buaya", color: "#FB8500", parentId: "k2",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Pulogadung", lat: -6.1890, lng: 106.9070 },
+      { n: "Cempaka Mas", lat: -6.1815, lng: 106.8660 },
+      { n: "Sawah Besar", lat: -6.1585, lng: 106.8250 },
+      { n: "Harmoni", lat: -6.1655, lng: 106.8168 },
+      { n: "Grogol", lat: -6.1630, lng: 106.7900 },
+      { n: "Rawa Buaya", lat: -6.1520, lng: 106.7350 },
+    ],
+  },
+  {
+    id: "k2b", name: "2B", route: "Transera Harapan Indah – Pulo Gadung", color: "#FF9E00", parentId: "k2",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Harapan Indah", lat: -6.1670, lng: 106.9800 },
+      { n: "Kayu Tinggi", lat: -6.1780, lng: 106.9350 },
+      { n: "Pulogadung", lat: -6.1890, lng: 106.9070 },
+    ],
+  },
+  {
+    id: "k2f", name: "2F", route: "Pulo Gadung – Rusun Cakung Barat", color: "#E85D04", parentId: "k2",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Pulogadung", lat: -6.1890, lng: 106.9070 },
+      { n: "Rusun Cakung Barat", lat: -6.1740, lng: 106.9470 },
+    ],
+  },
+  {
+    id: "k2h", name: "2H", route: "Rusun Jati Rawasari – Senen", color: "#FFB627", parentId: "k2",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Jati Rawasari", lat: -6.1830, lng: 106.8620 },
+      { n: "Cempaka Putih", lat: -6.1810, lng: 106.8660 },
+      { n: "Senen", lat: -6.1755, lng: 106.8420 },
+    ],
+  },
+  {
+    id: "k2p", name: "2P", route: "Terminal Senen – Stasiun Gondangdia", color: "#FAA307", parentId: "k2",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Senen", lat: -6.1755, lng: 106.8420 },
+      { n: "Kwitang", lat: -6.1810, lng: 106.8330 },
+      { n: "Stasiun Gondangdia", lat: -6.1850, lng: 106.8330 },
+    ],
+  },
+  {
+    id: "k2q", name: "2Q", route: "Gondangdia – Balai Kota", color: "#FFC300", parentId: "k2",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Stasiun Gondangdia", lat: -6.1850, lng: 106.8330 },
+      { n: "Monas", lat: -6.1754, lng: 106.8272 },
+      { n: "Balai Kota", lat: -6.1780, lng: 106.8290 },
+    ],
+  },
   {
     id: "k3", name: "Koridor 3", route: "Kalideres – Monas (via Veteran)", color: "#F9C74F",
     headway: 12, activeStart: 300, activeEnd: 1320, defaultVisible: false,
@@ -189,6 +252,70 @@ export const CORRIDORS: Corridor[] = [
       { n: "Tomang", lat: -6.1780, lng: 106.7970 },
       { n: "Harmoni", lat: -6.1655, lng: 106.8168 },
       { n: "Monas", lat: -6.1754, lng: 106.8272 },
+    ],
+  },
+  // Subkoridor/rute pengumpan Koridor 3 (non-BRT, bermerek Transjakarta).
+  // Diverifikasi dari transjakarta.co.id/rute (kode & titik akhir), koordinat
+  // halte tetap perkiraan seperti koridor trunk. Tidak ada rute Royaltrans
+  // di bawah Koridor 3.
+  {
+    id: "k3a", name: "3A", route: "Rusun Pesakih – Kalideres", color: "#F2C14E", parentId: "k3",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Pesakih", lat: -6.1450, lng: 106.6950 },
+      { n: "Kalideres", lat: -6.1530, lng: 106.7020 },
+    ],
+  },
+  {
+    id: "k3b", name: "3B", route: "Rusun Flamboyan – Cengkareng", color: "#E9C46A", parentId: "k3",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Flamboyan", lat: -6.1480, lng: 106.7280 },
+      { n: "Cengkareng", lat: -6.1500, lng: 106.7300 },
+    ],
+  },
+  {
+    id: "k3c", name: "3C", route: "Rusun Kapuk Muara – Penjaringan", color: "#EFB700", parentId: "k3",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Kapuk Muara", lat: -6.1030, lng: 106.7370 },
+      { n: "Penjaringan", lat: -6.1220, lng: 106.8080 },
+    ],
+  },
+  {
+    id: "k3d", name: "3D", route: "Taman Kota – Penjaringan via Tubagus Angke", color: "#DDA448", parentId: "k3",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Taman Kota", lat: -6.1590, lng: 106.7550 },
+      { n: "Tubagus Angke", lat: -6.1350, lng: 106.7850 },
+      { n: "Penjaringan", lat: -6.1220, lng: 106.8080 },
+    ],
+  },
+  {
+    id: "k3e", name: "3E", route: "Sentraland Cengkareng – Puri Kembangan", color: "#C9A227", parentId: "k3",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Sentraland Cengkareng", lat: -6.1450, lng: 106.7250 },
+      { n: "Puri Kembangan", lat: -6.1850, lng: 106.7450 },
+    ],
+  },
+  {
+    id: "k3f", name: "3F", route: "Kalideres – Senayan Bank Jakarta", color: "#FFCB69", parentId: "k3",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Kalideres", lat: -6.1530, lng: 106.7020 },
+      { n: "Rawa Buaya", lat: -6.1520, lng: 106.7350 },
+      { n: "Grogol", lat: -6.1630, lng: 106.7900 },
+      { n: "Tomang", lat: -6.1780, lng: 106.7970 },
+      { n: "Senayan Bank Jakarta", lat: -6.2190, lng: 106.8020 },
+    ],
+  },
+  {
+    id: "k3h", name: "3H", route: "Damai – Kota", color: "#D4A017", parentId: "k3",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Damai", lat: -6.1150, lng: 106.8850 },
+      { n: "Kota", lat: -6.1370, lng: 106.8133 },
     ],
   },
   {
