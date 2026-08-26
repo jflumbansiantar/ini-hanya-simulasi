@@ -111,6 +111,14 @@ export default function ControlPanel({
                     onChange={(e) => onToggleCorridor(c.id, e.target.checked)}
                   />
                   <div className="swatch" style={{ background: c.color }} />
+                  {c.amari && (
+                    <span
+                      className="amariTag"
+                      title="AMARI — punya varian angkutan malam hari, 22.00–05.00"
+                    >
+                      🌙
+                    </span>
+                  )}
                   <div className="corridorInfo">
                     <div className="name">
                       {c.name} · {c.route}
@@ -163,6 +171,8 @@ export default function ControlPanel({
       <div className="panelFooter">
         Posisi bus dihitung dari jadwal simulasi (headway &amp; kecepatan rata-rata asumsi),{" "}
         <b>bukan</b> data GPS langsung. Koordinat halte adalah perkiraan.
+        <br />
+        🌙 = koridor punya varian AMARI (Angkutan Malam Hari), 22.00–05.00.
       </div>
     </div>
   );

@@ -21,6 +21,15 @@ export interface Corridor {
    * bermerek Transjakarta yang dimasukkan di sini.
    */
   parentId?: string;
+  /**
+   * true untuk 13 koridor trunk (k1..k13) yang punya varian AMARI (Angkutan
+   * Malam Hari) resmi Transjakarta, beroperasi 22.00–05.00 dengan kode
+   * terpisah M1–M13 (mis. M9 = versi malam Koridor 9). Subkoridor tidak
+   * pernah AMARI — layanan ini spesifik ke rute trunk. Field ini murni
+   * informasional (badge di panel), TIDAK mengubah activeStart/activeEnd
+   * simulasi — lihat PRD §3 "Penanda AMARI".
+   */
+  amari?: boolean;
 }
 
 /**
@@ -31,7 +40,7 @@ export interface Corridor {
  */
 export const CORRIDORS: Corridor[] = [
   {
-    id: "k1", name: "Koridor 1", route: "Blok M – Kota", color: "#E63946",
+    id: "k1", name: "Koridor 1", route: "Blok M – Kota", color: "#E63946", amari: true,
     headway: 8, activeStart: 270, activeEnd: 1410, defaultVisible: true,
     stops: [
       { n: "Blok M", lat: -6.2440, lng: 106.7997 },
@@ -166,7 +175,7 @@ export const CORRIDORS: Corridor[] = [
     ],
   },
   {
-    id: "k2", name: "Koridor 2", route: "Harmoni – Pulogadung", color: "#F3722C",
+    id: "k2", name: "Koridor 2", route: "Harmoni – Pulogadung", color: "#F3722C", amari: true,
     headway: 10, activeStart: 300, activeEnd: 1320, defaultVisible: false,
     stops: [
       { n: "Harmoni", lat: -6.1655, lng: 106.8168 },
@@ -242,7 +251,7 @@ export const CORRIDORS: Corridor[] = [
     ],
   },
   {
-    id: "k3", name: "Koridor 3", route: "Kalideres – Monas (via Veteran)", color: "#F9C74F",
+    id: "k3", name: "Koridor 3", route: "Kalideres – Monas (via Veteran)", color: "#F9C74F", amari: true,
     headway: 12, activeStart: 300, activeEnd: 1320, defaultVisible: false,
     stops: [
       { n: "Kalideres", lat: -6.1530, lng: 106.7020 },
@@ -319,7 +328,7 @@ export const CORRIDORS: Corridor[] = [
     ],
   },
   {
-    id: "k4", name: "Koridor 4", route: "Pulogadung – Dukuh Atas 2", color: "#90BE6D",
+    id: "k4", name: "Koridor 4", route: "Pulogadung – Dukuh Atas 2", color: "#90BE6D", amari: true,
     headway: 10, activeStart: 300, activeEnd: 1320, defaultVisible: false,
     stops: [
       { n: "Pulogadung", lat: -6.1890, lng: 106.9070 },
@@ -388,7 +397,7 @@ export const CORRIDORS: Corridor[] = [
     ],
   },
   {
-    id: "k5", name: "Koridor 5", route: "Ancol – Kampung Melayu", color: "#43AA8B",
+    id: "k5", name: "Koridor 5", route: "Ancol – Kampung Melayu", color: "#43AA8B", amari: true,
     headway: 9, activeStart: 300, activeEnd: 1320, defaultVisible: false,
     stops: [
       { n: "Ancol", lat: -6.1250, lng: 106.8390 },
@@ -447,7 +456,7 @@ export const CORRIDORS: Corridor[] = [
     ],
   },
   {
-    id: "k6", name: "Koridor 6", route: "Ragunan – Dukuh Atas 2", color: "#4D908E",
+    id: "k6", name: "Koridor 6", route: "Ragunan – Dukuh Atas 2", color: "#4D908E", amari: true,
     headway: 8, activeStart: 280, activeEnd: 1380, defaultVisible: true,
     stops: [
       { n: "Ragunan", lat: -6.3010, lng: 106.8210 },
@@ -598,7 +607,7 @@ export const CORRIDORS: Corridor[] = [
     ],
   },
   {
-    id: "k7", name: "Koridor 7", route: "Kampung Rambutan – Kampung Melayu", color: "#577590",
+    id: "k7", name: "Koridor 7", route: "Kampung Rambutan – Kampung Melayu", color: "#577590", amari: true,
     headway: 10, activeStart: 300, activeEnd: 1320, defaultVisible: false,
     stops: [
       { n: "Kampung Rambutan", lat: -6.3040, lng: 106.8620 },
@@ -727,7 +736,7 @@ export const CORRIDORS: Corridor[] = [
     ],
   },
   {
-    id: "k8", name: "Koridor 8", route: "Lebak Bulus – Pasar Baru", color: "#277DA1",
+    id: "k8", name: "Koridor 8", route: "Lebak Bulus – Pasar Baru", color: "#277DA1", amari: true,
     headway: 9, activeStart: 300, activeEnd: 1320, defaultVisible: false,
     stops: [
       { n: "Lebak Bulus", lat: -6.2890, lng: 106.7750 },
@@ -802,7 +811,7 @@ export const CORRIDORS: Corridor[] = [
     ],
   },
   {
-    id: "k9", name: "Koridor 9", route: "Pinang Ranti – Pluit", color: "#F72585",
+    id: "k9", name: "Koridor 9", route: "Pinang Ranti – Pluit", color: "#F72585", amari: true,
     headway: 7, activeStart: 270, activeEnd: 1410, defaultVisible: true,
     stops: [
       { n: "Pinang Ranti", lat: -6.2820, lng: 106.8770 },
@@ -817,8 +826,74 @@ export const CORRIDORS: Corridor[] = [
       { n: "Pluit", lat: -6.1230, lng: 106.7920 },
     ],
   },
+  // Subkoridor/rute pengumpan Koridor 9 (non-BRT, bermerek Transjakarta).
+  // Diverifikasi dari transjakarta.co.id/rute (kode & titik akhir), koordinat
+  // halte tetap perkiraan seperti koridor trunk. Tidak ada rute Royaltrans
+  // di bawah Koridor 9.
   {
-    id: "k10", name: "Koridor 10", route: "Tanjung Priok – PGC 2 (Cililitan)", color: "#B5179E",
+    id: "k9a", name: "9A", route: "Cililitan – Grogol", color: "#E4368E", parentId: "k9",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "PGC (Cililitan)", lat: -6.2600, lng: 106.8620 },
+      { n: "Tomang", lat: -6.1780, lng: 106.7970 },
+      { n: "Grogol", lat: -6.1630, lng: 106.7900 },
+    ],
+  },
+  {
+    id: "k9c", name: "9C", route: "Pinang Ranti – Bundaran Senayan", color: "#FF6FA5", parentId: "k9",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Pinang Ranti", lat: -6.2820, lng: 106.8770 },
+      { n: "Cawang", lat: -6.2430, lng: 106.8620 },
+      { n: "Semanggi", lat: -6.2220, lng: 106.8080 },
+      { n: "Bundaran Senayan", lat: -6.2200, lng: 106.8010 },
+    ],
+  },
+  {
+    id: "k9d", name: "9D", route: "Pasar Minggu – Tanah Abang", color: "#C9184A", parentId: "k9",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Pasar Minggu", lat: -6.2830, lng: 106.8420 },
+      { n: "Kuningan", lat: -6.2250, lng: 106.8330 },
+      { n: "Semanggi", lat: -6.2220, lng: 106.8080 },
+      { n: "Tanah Abang", lat: -6.1860, lng: 106.8130 },
+    ],
+  },
+  {
+    id: "k9e", name: "9E", route: "Kebayoran – Jelambar", color: "#FF85A8", parentId: "k9",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Kebayoran", lat: -6.2430, lng: 106.7940 },
+      { n: "Grogol", lat: -6.1630, lng: 106.7900 },
+      { n: "Jelambar", lat: -6.1550, lng: 106.7850 },
+    ],
+  },
+  {
+    id: "k9f", name: "9F", route: "Rusun Tambora – Pluit", color: "#A61E4D", parentId: "k9",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Tambora", lat: -6.1450, lng: 106.8000 },
+      { n: "Pluit", lat: -6.1230, lng: 106.7920 },
+    ],
+  },
+  {
+    id: "k9h", name: "9H", route: "Cipedak – Pasar Minggu", color: "#FF9EBB", parentId: "k9",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Cipedak", lat: -6.3350, lng: 106.8180 },
+      { n: "Pasar Minggu", lat: -6.2830, lng: 106.8420 },
+    ],
+  },
+  {
+    id: "k9n", name: "9N", route: "Pinang Ranti – Simpang Cawang", color: "#7C0A3D", parentId: "k9",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Pinang Ranti", lat: -6.2820, lng: 106.8770 },
+      { n: "Simpang Cawang", lat: -6.2480, lng: 106.8680 },
+    ],
+  },
+  {
+    id: "k10", name: "Koridor 10", route: "Tanjung Priok – PGC 2 (Cililitan)", color: "#B5179E", amari: true,
     headway: 10, activeStart: 300, activeEnd: 1320, defaultVisible: false,
     stops: [
       { n: "Tanjung Priok", lat: -6.1110, lng: 106.8800 },
@@ -860,7 +935,7 @@ export const CORRIDORS: Corridor[] = [
     ],
   },
   {
-    id: "k11", name: "Koridor 11", route: "Kampung Melayu – Pulo Gebang", color: "#7209B7",
+    id: "k11", name: "Koridor 11", route: "Kampung Melayu – Pulo Gebang", color: "#7209B7", amari: true,
     headway: 12, activeStart: 300, activeEnd: 1320, defaultVisible: false,
     stops: [
       { n: "Kampung Melayu", lat: -6.2245, lng: 106.8600 },
@@ -943,7 +1018,7 @@ export const CORRIDORS: Corridor[] = [
     ],
   },
   {
-    id: "k12", name: "Koridor 12", route: "Pluit – Tanjung Priok", color: "#FFD60A",
+    id: "k12", name: "Koridor 12", route: "Pluit – Tanjung Priok", color: "#FFD60A", amari: true,
     headway: 10, activeStart: 300, activeEnd: 1320, defaultVisible: false,
     stops: [
       { n: "Pluit", lat: -6.1230, lng: 106.7920 },
@@ -1007,7 +1082,7 @@ export const CORRIDORS: Corridor[] = [
     ],
   },
   {
-    id: "k13", name: "Koridor 13", route: "Ciledug – Kapten Tendean", color: "#00F5D4",
+    id: "k13", name: "Koridor 13", route: "Ciledug – Kapten Tendean", color: "#00F5D4", amari: true,
     headway: 6, activeStart: 280, activeEnd: 1380, defaultVisible: true,
     stops: [
       { n: "Ciledug", lat: -6.2400, lng: 106.7220 },
