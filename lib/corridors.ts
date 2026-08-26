@@ -331,6 +331,62 @@ export const CORRIDORS: Corridor[] = [
       { n: "Dukuh Atas", lat: -6.2010, lng: 106.8230 },
     ],
   },
+  // Subkoridor/rute pengumpan Koridor 4 (non-BRT, bermerek Transjakarta).
+  // Diverifikasi dari transjakarta.co.id/rute (kode & titik akhir), koordinat
+  // halte tetap perkiraan seperti koridor trunk. Tidak ada rute Royaltrans
+  // di bawah Koridor 4.
+  {
+    id: "k4b", name: "4B", route: "Stasiun Manggarai – Universitas Indonesia", color: "#B5E48C", parentId: "k4",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Manggarai", lat: -6.2085, lng: 106.8500 },
+      { n: "Universitas Indonesia", lat: -6.3624, lng: 106.8306 },
+    ],
+  },
+  {
+    id: "k4c", name: "4C", route: "JIEP – Bundaran Senayan", color: "#99D98C", parentId: "k4",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "JIEP", lat: -6.1850, lng: 106.9150 },
+      { n: "Cempaka Mas", lat: -6.1815, lng: 106.8660 },
+      { n: "Senen", lat: -6.1755, lng: 106.8420 },
+      { n: "Bundaran Senayan", lat: -6.2200, lng: 106.8010 },
+    ],
+  },
+  {
+    id: "k4d", name: "4D", route: "Pulo Gadung – Patra Kuningan", color: "#76C893", parentId: "k4",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Pulogadung", lat: -6.1890, lng: 106.9070 },
+      { n: "Cipinang", lat: -6.1970, lng: 106.8700 },
+      { n: "Patra Kuningan", lat: -6.2270, lng: 106.8300 },
+    ],
+  },
+  {
+    id: "k4e", name: "4E", route: "Rusun Jatinegara Kaum – Pulo Gadung", color: "#52B788", parentId: "k4",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Rusun Jatinegara Kaum", lat: -6.1950, lng: 106.8850 },
+      { n: "Pulogadung", lat: -6.1890, lng: 106.9070 },
+    ],
+  },
+  {
+    id: "k4f", name: "4F", route: "Pinang Ranti – Pulo Gadung", color: "#74C69D", parentId: "k4",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Pinang Ranti", lat: -6.2820, lng: 106.8770 },
+      { n: "Pulogadung", lat: -6.1890, lng: 106.9070 },
+    ],
+  },
+  {
+    id: "k4k", name: "4K", route: "Pulo Gadung – Kejaksaan Agung", color: "#6A994E", parentId: "k4",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Pulogadung", lat: -6.1890, lng: 106.9070 },
+      { n: "Matraman", lat: -6.1990, lng: 106.8500 },
+      { n: "Kejaksaan Agung", lat: -6.2310, lng: 106.7970 },
+    ],
+  },
   {
     id: "k5", name: "Koridor 5", route: "Ancol – Kampung Melayu", color: "#43AA8B",
     headway: 9, activeStart: 300, activeEnd: 1320, defaultVisible: false,
@@ -340,6 +396,53 @@ export const CORRIDORS: Corridor[] = [
       { n: "Senen", lat: -6.1755, lng: 106.8420 },
       { n: "Matraman", lat: -6.1990, lng: 106.8500 },
       { n: "Jatinegara", lat: -6.2140, lng: 106.8700 },
+      { n: "Kampung Melayu", lat: -6.2245, lng: 106.8600 },
+    ],
+  },
+  // Subkoridor/rute pengumpan Koridor 5 (non-BRT, bermerek Transjakarta).
+  // Diverifikasi dari transjakarta.co.id/rute (kode & titik akhir), koordinat
+  // halte tetap perkiraan seperti koridor trunk. Tidak ada rute Royaltrans
+  // di bawah Koridor 5.
+  {
+    id: "k5b", name: "5B", route: "Stasiun Tebet – Bidara Cina", color: "#2D6A4F", parentId: "k5",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Stasiun Tebet", lat: -6.2255, lng: 106.8505 },
+      { n: "Bidara Cina", lat: -6.2270, lng: 106.8680 },
+    ],
+  },
+  {
+    id: "k5c", name: "5C", route: "Cililitan – Juanda", color: "#3A5A40", parentId: "k5",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "PGC (Cililitan)", lat: -6.2600, lng: 106.8620 },
+      { n: "Matraman", lat: -6.1990, lng: 106.8500 },
+      { n: "Juanda", lat: -6.1670, lng: 106.8300 },
+    ],
+  },
+  {
+    id: "k5f", name: "5F", route: "Kampung Melayu – Tanah Abang (via Casablanca)", color: "#588157", parentId: "k5",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Kampung Melayu", lat: -6.2245, lng: 106.8600 },
+      { n: "Casablanca", lat: -6.2210, lng: 106.8390 },
+      { n: "Tanah Abang", lat: -6.1860, lng: 106.8130 },
+    ],
+  },
+  {
+    id: "k5m", name: "5M", route: "Kampung Melayu – Tanah Abang (via Cikini)", color: "#6B9080", parentId: "k5",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Kampung Melayu", lat: -6.2245, lng: 106.8600 },
+      { n: "Cikini", lat: -6.1930, lng: 106.8390 },
+      { n: "Tanah Abang", lat: -6.1860, lng: 106.8130 },
+    ],
+  },
+  {
+    id: "k5n", name: "5N", route: "Ragunan – Kampung Melayu", color: "#A4C3B2", parentId: "k5",
+    headway: 15, activeStart: 300, activeEnd: 1320, defaultVisible: false,
+    stops: [
+      { n: "Ragunan", lat: -6.3010, lng: 106.8210 },
       { n: "Kampung Melayu", lat: -6.2245, lng: 106.8600 },
     ],
   },
