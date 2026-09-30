@@ -59,8 +59,12 @@ npm run check:missions      # validasi semua misi (+30 variasi acak per misi)
 npm run generate:missions   # buat ulang 100 misi (deterministik)
 ```
 
-Ubin peta dimuat langsung dari CARTO (`basemaps.cartocdn.com`). Tanpa akses
-internet, game tetap bisa dimainkan dengan latar gelap polos.
+Ubin peta default diambil dari OpenStreetMap (`tile.openstreetmap.org`, gratis
+tanpa API key) lalu digelapkan supaya cocok dengan tema game. Sumber lain bisa
+dipakai lewat `NEXT_PUBLIC_TILE_URL` (dan `NEXT_PUBLIC_TILE_TINT`,
+`NEXT_PUBLIC_TILE_ATTRIBUTION`); lihat `lib/game/tiles.ts`, termasuk contoh CARTO
+gelap yang sekarang butuh API key. Tanpa akses internet, game tetap bisa
+dimainkan dengan latar gelap polos.
 
 ## Struktur
 
