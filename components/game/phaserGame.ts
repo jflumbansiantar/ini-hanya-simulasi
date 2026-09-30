@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import type { GameController, MapPath } from "@/lib/game/controller";
-import { LINES, STOP_COORDS, hazardRange, type World } from "@/lib/game/world";
+import { DEMO_ZONES, LINES, STOP_COORDS, hazardRange, type World } from "@/lib/game/world";
 import { formatClock } from "@/lib/simulation";
 import {
   MAX_TILE_ZOOM,
@@ -279,10 +279,21 @@ class MapScene extends Phaser.Scene {
    * Digambar ulang hanya kalau set rintangan aktif atau zoom berubah.
    */
   private drawHazards(world: World | null, now: number, zoom: number, showAll: boolean) {
-    const active = world ? (showAll ? world.hazards : world.activeHazards(now)) : [];
+    // kejadian mendadak tidak pernah ditampilkan sebelum terjadi
+    const active = world ? (showAll ? world.hazards.filter((h) => !h.surprise) : world.activeHazards(now)) : [];
     const queues = world ? [...world.queues.entries()] : [];
     const closedNow = world ? world.tempClosures.filter((c) => now >= c.start && now < c.end).map((c) => c.stop) : [];
-    const key = `${showAll}|${active.map((h) => world!.hazards.indexOf(h)).join(",")}|${closedNow.join(",")}|${queues.length}|${zoom.toFixed(3)}`;
+    const medical = world ? world.surpriseEvents().filter((e) => e.kind === "medical" && now >= e.start && now < e.end) : [];
+    const demos = world ? world.demos.filter((d) => showAll || (now >= d.start && now < d.end)) : [];
+    const key = [
+      showAll,
+      active.map((h) => world!.hazards.indexOf(h)).join(","),
+      closedNow.join(","),
+      medical.length,
+      demos.map((d) => d.zone).join(","),
+      queues.length,
+      zoom.toFixed(3),
+    ].join("|");
     if (key === this.hazardKey) return;
     this.hazardKey = key;
 
@@ -294,8 +305,23 @@ class MapScene extends Phaser.Scene {
       redlight: { color: 0xff4d4d, icon: "🚦" },
       accident: { color: 0xe63946, icon: "💥" },
       jam: { color: 0xf3722c, icon: "🚧" },
+      procession: { color: 0x9d4edd, icon: "⚰️" },
     } as const;
     const icons: { x: number; y: number; text: string }[] = [];
+
+    for (const d of demos) {
+      const z = DEMO_ZONES[d.zone];
+      const c = project(z);
+      // jari-jari zona dalam piksel dunia (diukur dari titik 1 derajat lintang ke utara)
+      const r = z.radiusKm * (project({ lat: z.lat - 0.01, lng: z.lng }).y - c.y) / 1.112;
+      g.fillStyle(0xe63946, 0.13).fillCircle(c.x, c.y, r);
+      g.lineStyle(2 * px, 0xe63946, 0.8).strokeCircle(c.x, c.y, r);
+      icons.push({ x: c.x, y: c.y - r, text: `📢 Demo ${z.name} s/d ${formatClock(d.end)}` });
+    }
+    for (const e of medical) {
+      const p = project(STOP_COORDS.get(e.at!)!);
+      icons.push({ x: p.x, y: p.y - 26 * px, text: `🚑 evakuasi s/d ${formatClock(e.end)}` });
+    }
 
     for (const h of active) {
       const line = LINES.get(`${h.corridor}:forward`);
@@ -316,7 +342,7 @@ class MapScene extends Phaser.Scene {
         dashedLine(g, pts, 6 * px, 6 * px);
       }
       const mid = pts[Math.floor(pts.length / 2)];
-      const until = h.kind === "accident" && h.end !== undefined ? ` s/d ${formatClock(h.end)}` : "";
+      const until = (h.kind === "accident" || h.kind === "procession") && h.end !== undefined ? ` s/d ${formatClock(h.end)}` : "";
       icons.push({ x: mid.x, y: mid.y, text: `${st.icon}${until}` });
     }
     for (const stop of closedNow) {

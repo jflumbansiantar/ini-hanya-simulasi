@@ -2,7 +2,7 @@ import { haversineKm } from "../simulation";
 import type { Mission } from "./missions";
 import { simulatePlan, type PlanLeg } from "./session";
 import { solve, type Solution } from "./solver";
-import { LINES, STOP_COORDS, type Conditions, type Line } from "./world";
+import { DEMO_ZONES, LINES, STOP_COORDS, World, stopsInZone, type Conditions, type DemoZoneId, type Line } from "./world";
 
 /**
  * Pemasangan rintangan acak. Dipakai generator misi (scripts/generate-missions.ts)
@@ -11,7 +11,24 @@ import { LINES, STOP_COORDS, type Conditions, type Line } from "./world";
  * rentang kekuatan, dan faktor batas waktu mengikuti "resep" misi.
  */
 
-export type Obstacle = "redlight" | "private" | "queue" | "crowded" | "closed" | "accident" | "jam" | "saldo";
+export type Obstacle =
+  | "redlight"
+  | "private"
+  | "queue"
+  | "crowded"
+  | "closed"
+  | "accident"
+  | "jam"
+  | "saldo"
+  | "medical"
+  | "procession"
+  | "demo";
+
+/**
+ * Kejadian mendadak: baru diketahui pemain saat terjadi, jadi hanya dipakai di
+ * misi real-time (di mode rencana pemain tidak bisa bereaksi).
+ */
+export const SURPRISE_OBSTACLES: readonly Obstacle[] = ["medical", "procession"];
 
 export interface Recipe {
   chapter: number; // 0-based; menentukan rentang kekuatan rintangan
@@ -153,6 +170,51 @@ export function placeObstacle(kind: Obstacle, d: Draft, base: Solution, ch: numb
       hz.push({ kind: "accident", corridor: r.line.corridor.id, from: seg[0], to: seg[1], speed: 0.3, start, end });
       return true;
     }
+    case "medical": {
+      // penumpang pingsan di bus yang kamu naiki (menurut rute tercepat), di tengah perjalanan
+      if (c.medical?.length) return false;
+      const candidates = rides.filter((r) => r.alightIdx - r.boardIdx >= 2);
+      if (!candidates.length) return false;
+      const r = pick(candidates);
+      const bus = boardedBus(d, base, r);
+      if (bus === null) return false;
+      const at = r.boardIdx + intBetween(1, r.alightIdx - r.boardIdx - 1);
+      (c.medical ??= []).push({ lineKey: r.line.key, slot: bus, at: r.line.stops[at].n, dwell: 30 });
+      return true;
+    }
+    case "procession": {
+      // rombongan jenazah masuk jalur TJ tepat sebelum busmu melewati ruas itu
+      const candidates = rides.filter((r) => !windowedOn.has(r.line.corridor.id));
+      if (!candidates.length) return false;
+      const r = pick(candidates);
+      const len = r.alightIdx - r.boardIdx;
+      const span = Math.min(intBetween(1, 2), len);
+      const a = r.boardIdx + intBetween(0, len - span);
+      const bus = boardedBus(d, base, r);
+      if (bus === null) return false;
+      const entry = new World(d.conditions).departureTime(r.line, bus, a);
+      const start = Math.floor(entry - between(0.5, 3));
+      hz.push({
+        kind: "procession",
+        corridor: r.line.corridor.id,
+        from: r.line.stops[a].n,
+        to: r.line.stops[a + span].n,
+        speed: 0.05,
+        start,
+        end: start + 15,
+        surprise: true,
+      });
+      return true;
+    }
+    case "demo": {
+      // tawuran/demo di zona yang dilalui rute (asal, tujuan, atau halte transfer)
+      if (c.demos?.length) return false;
+      const keyStops = new Set([d.from, d.to, ...transferStops]);
+      const zones = (Object.keys(DEMO_ZONES) as DemoZoneId[]).filter((z) => stopsInZone(z).some((st) => keyStops.has(st)));
+      if (!zones.length) return false;
+      (c.demos ??= []).push({ zone: pick(zones), start: d.start - 5 * intBetween(2, 8), end: d.start + 5 * intBetween(18, 36) });
+      return true;
+    }
     case "jam": {
       const acc = hz.find((h) => h.kind === "accident");
       if (!acc) return false;
@@ -176,14 +238,23 @@ export function placeObstacle(kind: Obstacle, d: Draft, base: Solution, ch: numb
   }
 }
 
+/** Nomor bus (slot) yang dinaiki pada `ride` menurut rute `base`, atau null. */
+function boardedBus(d: Draft, base: Solution, r: Ride): number | null {
+  const i = base.legs.findIndex((l) => l.type === "ride" && l.lineKey === r.line.key);
+  const trip = simulatePlan(draftMission(d, d.start + 600, 100000), base.legs).trips[i];
+  if (!trip) return null;
+  return new World(d.conditions).nextArrival(r.line, r.boardIdx, trip.startT - 1e-6)?.slot ?? null;
+}
+
 /** Urutan pemasangan: kecelakaan harus ada sebelum macet imbasnya. */
 function orderKinds(kinds: Obstacle[]): Obstacle[] {
   const rank = (k: Obstacle) => (k === "accident" ? 0 : k === "jam" ? 1 : 2);
   return [...kinds].sort((a, b) => rank(a) - rank(b));
 }
 
-export function recipeKinds(recipe: Recipe, rng: Rng): Obstacle[] {
-  const extra = recipe.extra ? randomTools(rng).pickSome(recipe.extra.pool, recipe.extra.count) : [];
+export function recipeKinds(recipe: Recipe, rng: Rng, allowSurprise = true): Obstacle[] {
+  const pool = recipe.extra?.pool.filter((k) => allowSurprise || !SURPRISE_OBSTACLES.includes(k)) ?? [];
+  const extra = recipe.extra ? randomTools(rng).pickSome(pool, recipe.extra.count) : [];
   return orderKinds([...recipe.fixed, ...extra]);
 }
 
@@ -233,7 +304,7 @@ export function randomizeMission(m: Mission, seed: number, attempts = 30): { mis
   const rng = mulberry32(seed);
   const base = solve(draftMission({ from: m.from, to: m.to, start: m.start, balance: m.balance, conditions: { corridors: m.conditions.corridors } }, m.start + 500, 100000));
   for (let i = 0; i < attempts; i++) {
-    const kinds = recipeKinds(recipe, rng);
+    const kinds = recipeKinds(recipe, rng, m.mode === "live");
     const rolled = rollObstacles(m, kinds, recipe.chapter, recipe.slack, rng, base);
     if (rolled) {
       return {

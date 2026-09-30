@@ -39,7 +39,7 @@ export default function GameApp() {
       {phase === "playing" && <LivePanel />}
       {phase === "result" && <ResultPanel key={c.mission?.id} />}
       {c.message && (
-        <div key={c.message.seq} className="toast">
+        <div key={c.message.seq} className={`toast${c.message.text.startsWith("⚠️") ? " alert" : ""}`}>
           {c.message.text}
         </div>
       )}
