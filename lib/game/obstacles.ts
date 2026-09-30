@@ -2,7 +2,18 @@ import { haversineKm } from "../simulation";
 import type { Mission } from "./missions";
 import { simulatePlan, type PlanLeg } from "./session";
 import { solve, type Solution } from "./solver";
-import { DEMO_ZONES, LINES, STOP_COORDS, World, stopsInZone, type Conditions, type DemoZoneId, type Line } from "./world";
+import {
+  DEMO_ZONES,
+  FLOOD_PRONE,
+  LINES,
+  STOP_COORDS,
+  World,
+  stopsAround,
+  stopsInZone,
+  type Conditions,
+  type DemoZoneId,
+  type Line,
+} from "./world";
 
 /**
  * Pemasangan rintangan acak. Dipakai generator misi (scripts/generate-missions.ts)
@@ -22,7 +33,9 @@ export type Obstacle =
   | "saldo"
   | "medical"
   | "procession"
-  | "demo";
+  | "demo"
+  | "flood"
+  | "fire";
 
 /**
  * Kejadian mendadak: baru diketahui pemain saat terjadi, jadi hanya dipakai di
@@ -63,6 +76,9 @@ export function randomTools(rng: Rng) {
 }
 
 export const round5 = (n: number) => Math.ceil(n / 5) * 5;
+
+const FLOOD_RADIUS_KM = 1.2;
+const FIRE_RADIUS_KM = 0.6;
 
 // ---------- utilitas rute ----------
 export interface Ride {
@@ -213,6 +229,41 @@ export function placeObstacle(kind: Obstacle, d: Draft, base: Solution, ch: numb
       const zones = (Object.keys(DEMO_ZONES) as DemoZoneId[]).filter((z) => stopsInZone(z).some((st) => keyStops.has(st)));
       if (!zones.length) return false;
       (c.demos ??= []).push({ zone: pick(zones), start: d.start - 5 * intBetween(2, 8), end: d.start + 5 * intBetween(18, 36) });
+      return true;
+    }
+    case "flood": {
+      // banjir di daerah rawan yang dilalui rute: bus dialihkan, halte di zona tidak dilayani
+      if (c.areas?.some((a) => a.kind === "flood")) return false;
+      const passed = new Set(rides.flatMap((r) => r.line.stops.slice(r.boardIdx, r.alightIdx + 1).map((st) => st.n)));
+      const zones = FLOOD_PRONE.filter((z) => stopsAround(z, FLOOD_RADIUS_KM).some((st) => passed.has(st)));
+      if (!zones.length) return false;
+      (c.areas ??= []).push({
+        kind: "flood",
+        name: pick(zones),
+        radiusKm: FLOOD_RADIUS_KM,
+        speed: +between(0.35, 0.5).toFixed(2),
+        start: d.start - 5 * intBetween(6, 18),
+        end: d.start + 5 * intBetween(24, 48),
+      });
+      return true;
+    }
+    case "fire": {
+      // kebakaran di sekitar halte yang akan kamu lewati, terjadi sebelum busmu sampai
+      if (c.areas?.some((a) => a.kind === "fire")) return false;
+      const r = pick(rides);
+      const k = intBetween(r.boardIdx, r.alightIdx);
+      const bus = boardedBus(d, base, r);
+      if (bus === null) return false;
+      const reach = new World(d.conditions).arrivalTime(r.line, bus, k);
+      const start = Math.floor(reach - between(10, 30));
+      (c.areas ??= []).push({
+        kind: "fire",
+        name: r.line.stops[k].n,
+        radiusKm: FIRE_RADIUS_KM,
+        speed: +between(0.45, 0.6).toFixed(2),
+        start,
+        end: start + 5 * intBetween(9, 18),
+      });
       return true;
     }
     case "jam": {

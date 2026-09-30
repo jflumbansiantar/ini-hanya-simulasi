@@ -143,6 +143,45 @@ export function stopsInZone(zone: DemoZoneId): string[] {
   return [...STOP_COORDS].filter(([, p]) => haversineKm(z, p) <= z.radiusKm).map(([n]) => n);
 }
 
+/**
+ * Banjir / kebakaran di satu daerah: selama `start`..`end` halte di dalam
+ * zona tidak dilayani, dan bus yang melewati zona dialihkan lewat jalan lain
+ * (ruas yang tersentuh zona melaju `speed` × normal).
+ */
+export interface AreaEvent {
+  kind: "flood" | "fire";
+  name: string; // pusat zona = halte ini
+  radiusKm: number;
+  speed: number;
+  start: number;
+  end: number;
+}
+
+/** Daerah rawan banjir (pusat zona = halte). */
+export const FLOOD_PRONE = [
+  "Kampung Melayu",
+  "Grogol",
+  "Pluit",
+  "Cawang",
+  "Sunter",
+  "Jatinegara",
+  "Kemang",
+  "Pulomas",
+  "Penjaringan",
+  "Rawa Buaya",
+  "Cipinang",
+  "Pademangan",
+  "Kalideres",
+  "Tomang",
+];
+
+/** Nama halte (dari semua koridor) di dalam lingkaran berpusat di halte `center`. */
+export function stopsAround(center: string, radiusKm: number): string[] {
+  const c = STOP_COORDS.get(center);
+  if (!c) return [];
+  return [...STOP_COORDS].filter(([, p]) => haversineKm(c, p) <= radiusKm).map(([n]) => n);
+}
+
 /** Kejadian mendadak yang diumumkan ke pemain saat mulai terjadi. */
 export interface SurpriseEvent {
   kind: "medical" | "procession";
@@ -163,6 +202,7 @@ export interface Conditions {
   hazards?: Hazard[];
   medical?: MedicalIncident[];
   demos?: Demo[];
+  areas?: AreaEvent[];
 }
 
 export interface Arrival {
@@ -195,7 +235,8 @@ function hash01(s: string): number {
 /** Waktu tempuh satu ruas setelah semua rintangan diterapkan. */
 interface LegRule {
   base: number; // menit, sudah termasuk rintangan sepanjang misi
-  windowed: { start: number; end: number; speed: number; delay: number } | null;
+  // gangguan berjendela waktu (kecelakaan, macet, banjir, ...); boleh lebih dari satu
+  windows: { start: number; end: number; speed: number; delay: number }[];
 }
 
 /** Index halte (pada `line`) di rentang `from`..`to` sebuah rintangan, atau null. */
@@ -216,6 +257,7 @@ export class World {
   /** Penutupan halte sementara karena kecelakaan atau demo. */
   readonly tempClosures: { stop: string; start: number; end: number }[] = [];
   readonly demos: Demo[];
+  readonly areas: AreaEvent[];
   private readonly legRules = new Map<string, LegRule[]>();
   private readonly crowded = new Map<string, number>();
   private readonly medical = new Map<string, { slot: number; idx: number; dwell: number }>();
@@ -230,7 +272,7 @@ export class World {
 
     for (const line of this.lines) {
       const corridorSpeed = conditions.slowCorridors?.[line.corridor.id] ?? 1;
-      const rules: LegRule[] = line.legBase.map((b) => ({ base: b / corridorSpeed, windowed: null }));
+      const rules: LegRule[] = line.legBase.map((b) => ({ base: b / corridorSpeed, windows: [] }));
       for (const h of this.hazards) {
         if (h.corridor !== line.corridor.id) continue;
         const range = hazardRange(line, h);
@@ -238,8 +280,7 @@ export class World {
         for (let k = range[0]; k < range[1]; k++) {
           const r = rules[k];
           if (h.start !== undefined && h.end !== undefined) {
-            // maksimal satu rintangan berjendela per ruas (dijaga generator misi)
-            r.windowed = { start: h.start, end: h.end, speed: h.speed ?? 1, delay: h.delay ?? 0 };
+            r.windows.push({ start: h.start, end: h.end, speed: h.speed ?? 1, delay: h.delay ?? 0 });
           } else {
             r.base = r.base / (h.speed ?? 1) + (h.delay ?? 0);
           }
@@ -251,6 +292,23 @@ export class World {
         }
       }
       this.legRules.set(line.key, rules);
+    }
+
+    // banjir/kebakaran: halte di zona tidak dilayani, ruas yang tersentuh zona dialihkan (lambat)
+    this.areas = conditions.areas ?? [];
+    for (const a of this.areas) {
+      const center = STOP_COORDS.get(a.name);
+      if (!center) continue;
+      for (const stop of stopsAround(a.name, a.radiusKm)) this.tempClosures.push({ stop, start: a.start, end: a.end });
+      for (const line of this.lines) {
+        const { points, breaks } = line.dirMeta;
+        const rules = this.legRules.get(line.key)!;
+        for (let k = 0; k < rules.length; k++) {
+          let touches = false;
+          for (let i = breaks[k]; i <= breaks[k + 1] && !touches; i++) touches = haversineKm(center, points[i]) <= a.radiusKm;
+          if (touches) rules[k].windows.push({ start: a.start, end: a.end, speed: a.speed, delay: 0 });
+        }
+      }
     }
 
     for (const m of conditions.medical ?? []) {
@@ -317,11 +375,15 @@ export class World {
    * lebih awal selalu tiba lebih awal — penting untuk solver.
    */
   private legExit(rule: LegRule, t: number): number {
-    const w = rule.windowed;
     const normal = t + rule.base;
-    if (!w || t < w.start || t >= w.end) return normal;
-    // selama gangguan bus merayap; kalau gangguan selesai di tengah jalan, lanjut normal
-    return Math.max(normal, Math.min(t + rule.base / w.speed + w.delay, w.end + rule.base));
+    let exit = normal;
+    for (const w of rule.windows) {
+      if (t < w.start || t >= w.end) continue;
+      // selama gangguan bus merayap; kalau gangguan selesai di tengah jalan, lanjut normal.
+      // Tiap gangguan monoton terhadap t, dan maksimum dari fungsi monoton tetap monoton.
+      exit = Math.max(exit, Math.min(t + rule.base / w.speed + w.delay, w.end + rule.base));
+    }
+    return exit;
   }
 
   /**

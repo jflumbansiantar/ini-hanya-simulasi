@@ -30,6 +30,9 @@ tepat waktu, di atas peta Jakarta asli. Dibangun dengan Next.js + Phaser 3.
   - 🚧 macet imbas kecelakaan di koridor sekitarnya
   - 📢 tawuran/demo di sekitar Gedung MPR/DPR atau Bundaran HI: halte di zona itu
     ditutup selama demo
+  - 🌊 banjir di daerah rawan (mis. Kampung Melayu, Grogol, Pluit, Cawang) dan
+    🔥 kebakaran di sekitar satu halte: bus dialihkan lewat jalan lain (ruas yang
+    melewati zona melambat) dan halte di zona tidak dilayani
   - 🚑 penumpang pingsan (kejadian mendadak): bus berhenti 30 menit di halte
     terdekat untuk evakuasi dan bus di belakangnya ikut tertahan; kamu bisa
     menunggu atau turun dan cari jalan lain
