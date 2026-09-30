@@ -2,10 +2,10 @@
 
 import dynamic from "next/dynamic";
 
-// Simulator merender peta Leaflet (butuh `window`) — harus client-only,
+// Game memakai Phaser + localStorage (butuh `window`) — harus client-only,
 // dan ssr:false hanya diizinkan Next.js di dalam Client Component.
-const Simulator = dynamic(() => import("@/components/Simulator"), { ssr: false });
+const GameApp = dynamic(() => import("@/components/game/GameApp"), { ssr: false });
 
 export default function Home() {
-  return <Simulator />;
+  return <GameApp />;
 }
