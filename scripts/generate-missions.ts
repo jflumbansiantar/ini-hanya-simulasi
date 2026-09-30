@@ -159,11 +159,11 @@ const RULES: ChapterRule[] = [
   { transfers: [0, 1], duration: [20, 60], slack: 1.7, subs: false, distractors: 2, recipe: (i) => ({ fixed: i >= 3 ? ["queue", ...(i >= 7 ? ["redlight" as const] : [])] : [] }) },
   { transfers: [1, 1], duration: [25, 70], slack: 1.6, subs: false, distractors: 2, recipe: (i) => ({ fixed: ["crowded", ...(i >= 4 ? ["queue" as const] : [])] }) },
   { transfers: [1, 2], duration: [30, 80], slack: 1.55, subs: true, distractors: 2, recipe: (i) => ({ fixed: ["private"], extra: i >= 3 ? { pool: ["redlight", "crowded", "queue"], count: i >= 6 ? 2 : 1 } : undefined }) },
-  { transfers: [1, 2], duration: [30, 85], slack: 1.5, subs: true, distractors: 3, recipe: (i) => ({ fixed: [i % 2 ? "closed" : "saldo"], extra: i >= 5 ? { pool: ["queue", "redlight", "crowded"], count: 1 } : undefined }), early: (i) => i === 4 || i === 8 },
-  { transfers: [1, 2], duration: [30, 90], slack: 1.45, subs: true, distractors: 3, recipe: (i) => ({ fixed: ["accident"], extra: i >= 4 ? { pool: ["queue", "redlight", "crowded"], count: 1 } : undefined }) },
-  { transfers: [2, 2], duration: [40, 100], slack: 1.4, subs: true, distractors: 3, recipe: (i) => ({ fixed: ["accident", "jam"], extra: i >= 5 ? { pool: ["queue", "private", "crowded"], count: 1 } : undefined }) },
-  { transfers: [2, 3], duration: [45, 120], slack: 1.35, subs: true, distractors: 3, recipe: () => ({ fixed: [], extra: { pool: ["queue", "crowded", "private", "redlight", "closed", "accident"], count: 3 } }) },
-  { transfers: [2, 3], duration: [50, 140], slack: 1.28, subs: true, distractors: 4, recipe: (i) => ({ fixed: ["accident", "jam"], extra: { pool: ["queue", "crowded", "private", "redlight", "saldo"], count: i >= 5 ? 3 : 2 } }) },
+  { transfers: [1, 2], duration: [30, 85], slack: 1.5, subs: true, distractors: 3, recipe: (i) => ({ fixed: [i % 2 ? "closed" : "saldo"], extra: i >= 5 ? { pool: ["queue", "redlight", "crowded", "demo"], count: 1 } : undefined }), early: (i) => i === 4 || i === 8 },
+  { transfers: [1, 2], duration: [30, 90], slack: 1.45, subs: true, distractors: 3, recipe: (i) => ({ fixed: ["accident"], extra: i >= 4 ? { pool: ["queue", "redlight", "crowded", "medical", "procession"], count: 1 } : undefined }) },
+  { transfers: [2, 2], duration: [40, 100], slack: 1.4, subs: true, distractors: 3, recipe: (i) => ({ fixed: ["accident", "jam"], extra: i >= 5 ? { pool: ["queue", "private", "crowded", "procession", "demo"], count: 1 } : undefined }) },
+  { transfers: [2, 3], duration: [45, 120], slack: 1.35, subs: true, distractors: 3, recipe: () => ({ fixed: [], extra: { pool: ["queue", "crowded", "private", "redlight", "closed", "accident", "medical", "procession", "demo"], count: 3 } }) },
+  { transfers: [2, 3], duration: [50, 140], slack: 1.28, subs: true, distractors: 4, recipe: (i) => ({ fixed: ["accident", "jam"], extra: { pool: ["queue", "crowded", "private", "redlight", "saldo", "medical", "procession", "demo"], count: i >= 5 ? 3 : 2 } }) },
 ];
 
 const FIRST_TIPS: Record<number, string> = {
@@ -234,13 +234,14 @@ function generateOne(ch: number, local: number): Mission | null {
     const { fixed, extra } = rule.recipe(local);
     const recipe: Recipe = { chapter: ch, slack: rule.slack, fixed, ...(extra ? { extra } : {}) };
 
+    const mode = ch < 2 ? "plan" : ch >= 3 && local % 5 === 4 ? "plan" : "live";
     let m: Mission;
     if (!fixed.length && !extra) {
       const base = solve(noHazards(d, d.start + 500));
       if (!base) continue;
       m = draftMission(d, d.start + round5((base.arrival - d.start) * rule.slack));
     } else {
-      const rolled = rollObstacles(d, recipeKinds(recipe, rnd), ch, rule.slack, rnd);
+      const rolled = rollObstacles(d, recipeKinds(recipe, rnd, mode === "live"), ch, rule.slack, rnd);
       if (!rolled) {
         reject("rintangan tidak layak");
         continue;
@@ -251,7 +252,7 @@ function generateOne(ch: number, local: number): Mission | null {
       }
       m = { ...rolled, recipe };
     }
-    m.mode = ch < 2 ? "plan" : ch >= 3 && local % 5 === 4 ? "plan" : "live";
+    m.mode = mode;
 
     // validasi akhir: solver & mesin game sepakat, dan masih bisa selesai
     const final = solve(m);

@@ -33,9 +33,9 @@ export const CHAPTERS: Chapter[] = [
   { title: "Jam Sibuk", blurb: "Kapasitas bus terbatas — bus penuh tidak bisa dinaiki." },
   { title: "Busway Diserobot", blurb: "Kendaraan pribadi masuk jalur TJ dan memperlambat bus." },
   { title: "Akhir Bulan", blurb: "Halte ditutup, jalan kaki, dan saldo kartu mepet." },
-  { title: "Kecelakaan!", blurb: "Jalur TJ ditutup sementara, bus lewat lajur umum." },
-  { title: "Efek Domino", blurb: "Kecelakaan memicu macet di koridor sekitarnya." },
-  { title: "Kota Sibuk", blurb: "Semua rintangan bercampur, rute makin panjang." },
+  { title: "Kecelakaan!", blurb: "Jalur TJ ditutup sementara, bus lewat lajur umum. Waspada kejadian mendadak." },
+  { title: "Efek Domino", blurb: "Kecelakaan memicu macet di koridor sekitarnya. Rombongan jenazah dan demo." },
+  { title: "Kota Sibuk", blurb: "Semua rintangan bercampur, termasuk penumpang pingsan dan demo." },
   { title: "Master Penumpang", blurb: "Tantangan terakhir: rintangan terberat, waktu paling mepet." },
 ];
 

@@ -87,7 +87,7 @@ export function busCapacity(corridor: Corridor): number {
 }
 
 // ---- kondisi misi (rintangan) ----
-export type HazardKind = "private" | "redlight" | "accident" | "jam";
+export type HazardKind = "private" | "redlight" | "accident" | "jam" | "procession";
 
 /**
  * Rintangan pada rentang halte `from`..`to` sebuah koridor (urutan halte
@@ -97,6 +97,8 @@ export type HazardKind = "private" | "redlight" | "accident" | "jam";
  * - accident: kecelakaan, busway ditutup; bus lewat lajur umum (lambat) dan
  *   halte di dalam rentang tidak dilayani selama `start`..`end`
  * - jam: macet (biasanya imbas kecelakaan) selama `start`..`end`
+ * - procession: rombongan jenazah masuk jalur TJ; bus di ruas itu tertahan
+ *   sampai rombongan keluar (`end`)
  */
 export interface Hazard {
   kind: HazardKind;
@@ -107,6 +109,49 @@ export interface Hazard {
   delay?: number; // menit tambahan per ruas
   start?: number; // jendela waktu (menit sejak 00:00); tanpa jendela = sepanjang misi
   end?: number;
+  surprise?: boolean; // kejadian mendadak: tidak diumumkan sebelum terjadi
+}
+
+/**
+ * Penumpang pingsan di dalam bus `slot` pada `lineKey`: bus berhenti di
+ * halte `at` selama `dwell` menit untuk evakuasi. Bus di belakangnya tidak
+ * bisa menyalip di busway, jadi ikut tertahan. Selalu kejadian mendadak.
+ */
+export interface MedicalIncident {
+  lineKey: string;
+  slot: number;
+  at: string;
+  dwell: number;
+}
+
+/** Tawuran/demo: halte di dalam zona ditutup selama `start`..`end`. */
+export interface Demo {
+  zone: DemoZoneId;
+  start: number;
+  end: number;
+}
+
+export type DemoZoneId = "dpr" | "hi";
+export const DEMO_ZONES: Record<DemoZoneId, { name: string; lat: number; lng: number; radiusKm: number }> = {
+  dpr: { name: "Gedung MPR/DPR", lat: -6.2103, lng: 106.7999, radiusKm: 1.65 },
+  hi: { name: "Bundaran HI", lat: -6.195, lng: 106.823, radiusKm: 0.9 },
+};
+
+/** Nama halte (dari semua koridor) yang berada di dalam zona demo. */
+export function stopsInZone(zone: DemoZoneId): string[] {
+  const z = DEMO_ZONES[zone];
+  return [...STOP_COORDS].filter(([, p]) => haversineKm(z, p) <= z.radiusKm).map(([n]) => n);
+}
+
+/** Kejadian mendadak yang diumumkan ke pemain saat mulai terjadi. */
+export interface SurpriseEvent {
+  kind: "medical" | "procession";
+  start: number;
+  end: number;
+  text: string;
+  lineKey?: string;
+  at?: string;
+  hazard?: Hazard;
 }
 
 export interface Conditions {
@@ -116,12 +161,22 @@ export interface Conditions {
   crowdedCorridors?: Record<string, number>; // peluang bus tiba sudah penuh (0..1)
   queues?: Record<string, number>; // jumlah orang yang mengantre di depanmu di halte ini
   hazards?: Hazard[];
+  medical?: MedicalIncident[];
+  demos?: Demo[];
 }
 
 export interface Arrival {
   line: Line;
   slot: number;
   time: number;
+}
+
+/** Jarak waktu minimum antar-bus di halte yang sama (bus tidak bisa menyalip). */
+const NO_PASSING_GAP = 0.5;
+
+function clock(t: number): string {
+  const m = ((Math.floor(t) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
 
 // hash deterministik supaya keramaian bus sama setiap kali misi diulang
@@ -158,11 +213,13 @@ export class World {
   readonly queues: Map<string, number>;
   readonly stopLines = new Map<string, { line: Line; idx: number }[]>();
   readonly walkLinks = new Map<string, { to: string; km: number; minutes: number }[]>();
-  /** Penutupan halte sementara karena kecelakaan. */
+  /** Penutupan halte sementara karena kecelakaan atau demo. */
   readonly tempClosures: { stop: string; start: number; end: number }[] = [];
+  readonly demos: Demo[];
   private readonly legRules = new Map<string, LegRule[]>();
   private readonly crowded = new Map<string, number>();
-  private readonly scheduleCache = new Map<string, number[]>();
+  private readonly medical = new Map<string, { slot: number; idx: number; dwell: number }>();
+  private readonly scheduleCache = new Map<string, { arr: number[]; dep: number[] }>();
 
   constructor(readonly conditions: Conditions) {
     this.lines = conditions.corridors.flatMap((id) => LINES_BY_CORRIDOR.get(id) ?? []);
@@ -194,6 +251,16 @@ export class World {
         }
       }
       this.legRules.set(line.key, rules);
+    }
+
+    for (const m of conditions.medical ?? []) {
+      const line = LINES.get(m.lineKey);
+      const idx = line?.stopIndex.get(m.at);
+      if (line && idx !== undefined && this.lines.includes(line)) this.medical.set(line.key, { slot: m.slot, idx, dwell: m.dwell });
+    }
+    this.demos = conditions.demos ?? [];
+    for (const d of this.demos) {
+      for (const stop of stopsInZone(d.zone)) this.tempClosures.push({ stop, start: d.start, end: d.end });
     }
 
     for (const line of this.lines) {
@@ -257,17 +324,47 @@ export class World {
     return Math.max(normal, Math.min(t + rule.base / w.speed + w.delay, w.end + rule.base));
   }
 
-  /** Waktu tiba bus `slot` di setiap halte `line` (di-cache). */
-  schedule(line: Line, slot: number): number[] {
+  /**
+   * Waktu tiba (`arr`) dan berangkat (`dep`) bus `slot` di setiap halte
+   * `line` (di-cache). Biasanya dep = arr; bus yang mengevakuasi penumpang
+   * pingsan berhenti lebih lama. Bus tidak bisa menyalip di busway, jadi
+   * setiap bus paling cepat tiba sesaat setelah bus di depannya berangkat.
+   */
+  private timetable(line: Line, slot: number): { arr: number[]; dep: number[] } {
     const key = `${line.key}#${slot}`;
-    let arr = this.scheduleCache.get(key);
-    if (!arr) {
+    let tt = this.scheduleCache.get(key);
+    if (!tt) {
       const rules = this.legRules.get(line.key)!;
-      arr = [this.departTime(line, slot)];
-      for (let k = 0; k < rules.length; k++) arr.push(this.legExit(rules[k], arr[k]));
-      this.scheduleCache.set(key, arr);
+      const med = this.medical.get(line.key);
+      // hanya bus sesudah bus yang berhenti yang bisa tertahan
+      const ahead = med && slot > med.slot ? this.timetable(line, slot - 1) : null;
+      const arr = [this.departTime(line, slot)];
+      const dep: number[] = [];
+      for (let k = 0; k < line.stops.length; k++) {
+        if (ahead) arr[k] = Math.max(arr[k], ahead.dep[k] + NO_PASSING_GAP);
+        dep.push(arr[k] + (med && med.slot === slot && med.idx === k ? med.dwell : 0));
+        if (k < rules.length) arr.push(this.legExit(rules[k], dep[k]));
+      }
+      tt = { arr, dep };
+      this.scheduleCache.set(key, tt);
     }
-    return arr;
+    return tt;
+  }
+
+  /** Waktu tiba bus `slot` di setiap halte `line`. */
+  schedule(line: Line, slot: number): number[] {
+    return this.timetable(line, slot).arr;
+  }
+
+  departureTime(line: Line, slot: number, idx: number): number {
+    return this.timetable(line, slot).dep[idx];
+  }
+
+  /** Bus sedang berhenti lama di halte (evakuasi) pada waktu `t`: index halte, atau -1. */
+  dwellingAt(line: Line, slot: number, t: number): number {
+    const { arr, dep } = this.timetable(line, slot);
+    for (let k = 0; k < arr.length; k++) if (dep[k] > arr[k] && t >= arr[k] && t < dep[k]) return k;
+    return -1;
   }
 
   arrivalTime(line: Line, slot: number, idx: number): number {
@@ -338,15 +435,17 @@ export class World {
   }
 
   busPosition(line: Line, slot: number, t: number): { lat: number; lng: number; heading: number } | null {
-    const arr = this.schedule(line, slot);
+    const { arr, dep } = this.timetable(line, slot);
     if (t < arr[0] || t > arr[arr.length - 1]) return null;
+    const { cumKm, breaks } = line.dirMeta;
+    const total = cumKm[cumKm.length - 1];
     let k = 0;
     while (k < arr.length - 2 && arr[k + 1] <= t) k++;
-    const span = arr[k + 1] - arr[k];
-    const f = span > 0 ? (t - arr[k]) / span : 0;
-    const { cumKm, breaks } = line.dirMeta;
+    if (t < dep[k]) return positionAlongDirection(line.dirMeta, line.stops, cumKm[breaks[k]] / total); // berhenti di halte
+    const span = arr[k + 1] - dep[k];
+    const f = span > 0 ? (t - dep[k]) / span : 0;
     const km = cumKm[breaks[k]] + f * (cumKm[breaks[k + 1]] - cumKm[breaks[k]]);
-    return positionAlongDirection(line.dirMeta, line.stops, km / cumKm[cumKm.length - 1]);
+    return positionAlongDirection(line.dirMeta, line.stops, km / total);
   }
 
   /** Semua bus yang sedang berjalan pada waktu `t` (untuk digambar di peta). */
@@ -362,6 +461,36 @@ export class World {
       }
     }
     return out;
+  }
+
+  /** Kejadian mendadak (penumpang pingsan, rombongan jenazah), urut waktu mulai. */
+  surpriseEvents(): SurpriseEvent[] {
+    const out: SurpriseEvent[] = [];
+    for (const [key, m] of this.medical) {
+      const line = LINES.get(key)!;
+      const start = this.arrivalTime(line, m.slot, m.idx);
+      const at = line.stops[m.idx].n;
+      out.push({
+        kind: "medical",
+        start,
+        end: start + m.dwell,
+        lineKey: key,
+        at,
+        text: `Penumpang pingsan di bus ${lineLabel(line)}! Bus berhenti di halte ${at} untuk evakuasi sampai ${clock(start + m.dwell)}, bus di belakangnya ikut tertahan.`,
+      });
+    }
+    for (const h of this.hazards) {
+      if (h.kind !== "procession" || h.start === undefined || h.end === undefined) continue;
+      const name = CORRIDOR_BY_ID.get(h.corridor)!.name;
+      out.push({
+        kind: "procession",
+        start: h.start,
+        end: h.end,
+        hazard: h,
+        text: `Rombongan jenazah masuk jalur TJ ${name} ${h.from}–${h.to}. Bus tertahan sampai ${clock(h.end)}.`,
+      });
+    }
+    return out.sort((a, b) => a.start - b.start);
   }
 
   /** Rintangan yang sedang berlaku pada waktu `t`. */

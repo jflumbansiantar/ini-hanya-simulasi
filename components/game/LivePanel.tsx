@@ -69,8 +69,22 @@ function LiveControls({ session }: { session: Session }) {
     const line = LINES.get(st.lineKey)!;
     const passed = w.passedIndex(line, st.slot, session.now);
     const next = line.stops[passed + 1];
+    const dwelling = w.dwellingAt(line, st.slot, session.now);
     return (
       <>
+        {dwelling >= 0 && (
+          <div className="incidentBox">
+            🚑 Bus berhenti di halte <b>{line.stops[dwelling].n}</b> untuk evakuasi penumpang pingsan sampai{" "}
+            <b>{formatClock(w.departureTime(line, st.slot, dwelling))}</b>. Tunggu, atau turun dan cari jalan lain?
+            <button
+              className="btn primary small"
+              onClick={() => c.act((ss) => ss.setAlight(line.stops[dwelling].n))}
+              disabled={st.alightIdx === dwelling}
+            >
+              {st.alightIdx === dwelling ? "Turun…" : "Turun di halte ini"}
+            </button>
+          </div>
+        )}
         <div className="status">
           <span className="swatch" style={{ background: line.corridor.color }} /> Di dalam <b>{lineLabel(line)}</b>
           <div className="dim small">
@@ -175,7 +189,7 @@ export default function LivePanel() {
   const m = c.mission!;
   return (
     <aside className="panel">
-      <ConditionList mission={m} now={s.now} />
+      <ConditionList mission={m} now={s.now} world={c.world} />
       {m.mode === "plan" && s.plan ? (
         <>
           <h3>Rencana berjalan</h3>

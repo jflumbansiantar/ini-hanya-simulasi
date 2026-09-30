@@ -28,6 +28,16 @@ tepat waktu, di atas peta Jakarta asli. Dibangun dengan Next.js + Phaser 3.
   - 💥 kecelakaan: busway ditutup sementara, bus lewat lajur umum (lambat) dan
     halte di ruas itu tidak dilayani
   - 🚧 macet imbas kecelakaan di koridor sekitarnya
+  - 📢 tawuran/demo di sekitar Gedung MPR/DPR atau Bundaran HI: halte di zona itu
+    ditutup selama demo
+  - 🚑 penumpang pingsan (kejadian mendadak): bus berhenti 30 menit di halte
+    terdekat untuk evakuasi dan bus di belakangnya ikut tertahan; kamu bisa
+    menunggu atau turun dan cari jalan lain
+  - ⚰️ rombongan jenazah masuk jalur TJ (kejadian mendadak): bus di ruas itu
+    tertahan 15 menit
+
+  Kejadian mendadak tidak diumumkan di briefing; saat terjadi, muncul peringatan
+  dan game dijeda supaya kamu sempat bereaksi. Hanya ada di misi real-time.
 - **Rintangan acak**: setiap kali misi dimulai (atau diulang), letak, jam, dan
   kekuatan rintangan diacak, begitu juga jenis rintangan tambahannya. Tingkat
   kesulitan tetap sama karena mengikuti resep misi (rintangan wajib bab, jumlah

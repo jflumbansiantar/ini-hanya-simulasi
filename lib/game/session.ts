@@ -55,6 +55,8 @@ export class Session {
   plan: PlanLeg[] | null = null;
   private planIdx = 0;
   private rideStartT = 0;
+  private announced = 0; // jumlah kejadian mendadak yang sudah diumumkan
+  alert: { text: string; seq: number } | null = null; // kejadian mendadak terakhir (untuk toast)
   version = 0; // naik setiap state berubah, untuk re-render UI
 
   constructor(readonly mission: Mission) {
@@ -123,7 +125,9 @@ export class Session {
     if (s.kind !== "ride") return "Kamu tidak sedang naik bus.";
     const line = LINES.get(s.lineKey)!;
     const passed = this.world.passedIndex(line, s.slot, this.now);
-    const err = this.checkAlight(line, passed, stop);
+    // bus sedang berhenti lama (evakuasi): boleh turun di halte ini juga
+    const dwelling = this.world.dwellingAt(line, s.slot, this.now);
+    const err = this.checkAlight(line, dwelling >= 0 ? dwelling - 1 : passed, stop);
     if (err) return err;
     s.alightIdx = line.stopIndex.get(stop)!;
     this.note(`Akan turun di ${stop}.`);
@@ -208,6 +212,7 @@ export class Session {
       this.now = Math.max(this.now, te);
       this.handleEvent();
     }
+    this.announceSurprises();
     if (!this.finished && this.now >= this.mission.deadline) {
       this.fail(`Terlambat! Sudah ${formatClock(this.mission.deadline)} dan kamu belum sampai ${this.mission.to}.`);
     }
@@ -217,6 +222,18 @@ export class Session {
         this.note(`Layanan ${lineLabel(line)} sudah selesai untuk hari ini.`, "warn");
         this.state.waitFor = null;
       }
+    }
+  }
+
+  /** Umumkan kejadian mendadak yang sudah mulai (penumpang pingsan, rombongan jenazah). */
+  private announceSurprises() {
+    const events = this.world.surpriseEvents();
+    while (this.announced < events.length && events[this.announced].start <= this.now) {
+      const e = events[this.announced++];
+      if (this.finished) continue;
+      this.note(`${e.kind === "medical" ? "🚑" : "⚰️"} ${e.text}`, "warn");
+      // hanya kejadian yang masih berlangsung yang perlu memunculkan peringatan
+      if (e.end > this.now) this.alert = { text: e.text, seq: (this.alert?.seq ?? 0) + 1 };
     }
   }
 

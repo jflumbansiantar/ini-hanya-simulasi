@@ -55,7 +55,7 @@ export default function PlanPanel() {
   return (
     <aside className="panel">
       <h3>Susun rencana</h3>
-      <ConditionList mission={m} />
+      <ConditionList mission={m} world={w} />
       {c.draft.length > 0 ? (
         <PlanSteps plan={c.draft} origin={m.from} session={preview} />
       ) : (

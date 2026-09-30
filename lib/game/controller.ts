@@ -60,6 +60,7 @@ export class GameController {
   private listeners = new Set<() => void>();
   private lastEmit = 0;
   private lastSessionVersion = -1;
+  private lastAlertSeq = 0;
 
   init() {
     this.progress = loadProgress();
@@ -135,6 +136,7 @@ export class GameController {
     const m = this.mission!;
     this.session = new Session(m);
     this.lastSessionVersion = -1;
+    this.lastAlertSeq = 0;
     this.result = null;
     if (m.mode === "plan") {
       this.phase = "planning";
@@ -299,6 +301,12 @@ export class GameController {
     if (s.finished) {
       this.finish();
       return;
+    }
+    // kejadian mendadak: tampilkan peringatan dan jeda supaya pemain sempat bereaksi
+    if (s.alert && s.alert.seq !== this.lastAlertSeq) {
+      this.lastAlertSeq = s.alert.seq;
+      this.paused = true;
+      this.toast(`⚠️ ${s.alert.text} (game dijeda)`);
     }
     const changed = s.version !== this.lastSessionVersion;
     this.lastSessionVersion = s.version;

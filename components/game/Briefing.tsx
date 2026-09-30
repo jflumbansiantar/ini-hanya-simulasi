@@ -1,9 +1,25 @@
 import { controller } from "@/lib/game/controller";
 import { MISSIONS_PER_CHAPTER, missionIndex, type Mission } from "@/lib/game/missions";
-import { CORRIDOR_BY_ID, FARE_EARLY, FARE_NORMAL, busCapacity, type Hazard, type HazardKind } from "@/lib/game/world";
+import {
+  CORRIDOR_BY_ID,
+  DEMO_ZONES,
+  FARE_EARLY,
+  FARE_NORMAL,
+  busCapacity,
+  stopsInZone,
+  type Hazard,
+  type HazardKind,
+  type World,
+} from "@/lib/game/world";
 import { formatClock, minutes, rupiah } from "./format";
 
-export const HAZARD_ICON: Record<HazardKind, string> = { private: "🚗", redlight: "🚦", accident: "💥", jam: "🚧" };
+export const HAZARD_ICON: Record<HazardKind, string> = {
+  private: "🚗",
+  redlight: "🚦",
+  accident: "💥",
+  jam: "🚧",
+  procession: "⚰️",
+};
 
 function hazardText(h: Hazard): string {
   const name = CORRIDOR_BY_ID.get(h.corridor)!.name;
@@ -19,19 +35,50 @@ function hazardText(h: Hazard): string {
       return `Kecelakaan di ${where}${when}: busway ditutup, bus lewat lajur umum (${pct}) dan halte di antaranya tidak dilayani.`;
     case "jam":
       return `Macet imbas kecelakaan di ${where}${when}: bus hanya melaju ${pct}.`;
+    case "procession":
+      return `Rombongan jenazah masuk jalur TJ ${where}${when}: bus tertahan sampai rombongan keluar.`;
   }
 }
 
-export function ConditionList({ mission, now }: { mission: Mission; now?: number }) {
+type Item = { icon: string; text: string; active?: boolean; over?: boolean };
+
+const windowState = (now: number | undefined, start: number, end: number) => ({
+  active: now !== undefined && now >= start && now < end,
+  over: now !== undefined && now >= end,
+});
+
+/**
+ * Daftar rintangan misi. Kejadian mendadak (penumpang pingsan, rombongan
+ * jenazah) disembunyikan sampai terjadi — sebelumnya hanya ada peringatan umum.
+ */
+export function ConditionList({ mission, now, world }: { mission: Mission; now?: number; world?: World | null }) {
   const cond = mission.conditions;
-  const items: { icon: string; text: string; active?: boolean; over?: boolean }[] = [];
+  const items: Item[] = [];
+  let hiddenSurprise = false;
   for (const h of cond.hazards ?? []) {
     const windowed = h.start !== undefined && h.end !== undefined;
+    if (h.surprise && (now === undefined || !windowed || now < h.start!)) {
+      hiddenSurprise = true;
+      continue;
+    }
+    items.push({ icon: HAZARD_ICON[h.kind], text: hazardText(h), ...(windowed ? windowState(now, h.start!, h.end!) : {}) });
+  }
+  for (const e of world?.surpriseEvents() ?? []) {
+    if (e.kind !== "medical") continue;
+    if (now === undefined || now < e.start) {
+      hiddenSurprise = true;
+      continue;
+    }
+    items.push({ icon: "🚑", text: e.text, ...windowState(now, e.start, e.end) });
+  }
+  if (!world && cond.medical?.length) hiddenSurprise = true;
+  for (const d of cond.demos ?? []) {
+    const zone = DEMO_ZONES[d.zone];
+    const stops = stopsInZone(d.zone).filter((n) => world?.stopLines.has(n) ?? true);
     items.push({
-      icon: HAZARD_ICON[h.kind],
-      text: hazardText(h),
-      active: now !== undefined && windowed && now >= h.start! && now < h.end!,
-      over: now !== undefined && windowed && now >= h.end!,
+      icon: "📢",
+      text: `Tawuran/demo di sekitar ${zone.name} pukul ${formatClock(d.start)}–${formatClock(d.end)}: halte ${stops.join(", ")} ditutup.`,
+      ...windowState(now, d.start, d.end),
     });
   }
   for (const s of cond.closedStops ?? []) items.push({ icon: "⛔", text: `Halte ${s} ditutup — bus lewat tanpa berhenti.` });
@@ -47,6 +94,9 @@ export function ConditionList({ mission, now }: { mission: Mission; now?: number
       icon: "🧍",
       text: `${c.name} padat (kapasitas ${busCapacity(c)} orang/bus): ~${Math.round(p * 100)}% bus tiba sudah penuh.`,
     });
+  }
+  if (hiddenSurprise) {
+    items.push({ icon: "⚠️", text: "Waspada: kejadian mendadak bisa terjadi selama perjalanan." });
   }
   if (!items.length) return null;
   return (
@@ -102,7 +152,7 @@ export default function Briefing() {
             <b>{m.conditions.corridors.map((id) => CORRIDOR_BY_ID.get(id)!.name.replace("Koridor ", "K")).join(", ")}</b>
           </div>
         </div>
-        <ConditionList mission={m} />
+        <ConditionList mission={m} world={c.world} />
         {m.recipe && (
           <div className="rerollRow">
             <span className="dim small">

@@ -780,3 +780,26 @@ button {
 .rerollRow .linkBtn {
   white-space: nowrap;
 }
+.incidentBox {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  background: rgba(255, 107, 107, 0.14);
+  border: 1px solid rgba(255, 107, 107, 0.55);
+}
+.btn.small {
+  padding: 6px 12px;
+  font-size: 12.5px;
+  justify-self: start;
+}
+.toast.alert {
+  background: #2b2412;
+  border-color: rgba(249, 199, 79, 0.6);
+  color: #ffe9b0;
+  font-weight: 600;
+  animation-duration: 7s;
+}
