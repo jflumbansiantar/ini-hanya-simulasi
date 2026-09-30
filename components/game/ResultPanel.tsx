@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { controller } from "@/lib/game/controller";
-import { MISSIONS } from "@/lib/game/missions";
+import { MISSIONS, missionIndex } from "@/lib/game/missions";
 import { formatClock, minutes, rupiah } from "./format";
 import { Stars } from "./MissionMenu";
 import { PlanSteps } from "./PlanPanel";
@@ -12,7 +12,7 @@ export default function ResultPanel() {
   const r = c.result!;
   const best = c.solution;
   const [showBest, setShowBest] = useState(false);
-  const hasNext = MISSIONS.indexOf(m) + 1 < MISSIONS.length;
+  const hasNext = missionIndex(m.id) + 1 < MISSIONS.length;
 
   return (
     <div className="overlay soft">
@@ -77,8 +77,12 @@ export default function ResultPanel() {
           <button className="btn ghost" onClick={() => c.backToMenu()}>
             Menu
           </button>
-          <button className="btn ghost" onClick={() => c.openMission(MISSIONS.indexOf(m))}>
-            Ulangi
+          <button
+            className="btn ghost"
+            onClick={() => c.rerollMission()}
+            title={m.recipe ? "Main lagi dengan rintangan acak baru" : undefined}
+          >
+            {m.recipe ? "🎲 Ulangi" : "Ulangi"}
           </button>
           {r.success && hasNext && (
             <button className="btn primary" onClick={() => c.nextMission()}>

@@ -28,6 +28,11 @@ tepat waktu, di atas peta Jakarta asli. Dibangun dengan Next.js + Phaser 3.
   - 💥 kecelakaan: busway ditutup sementara, bus lewat lajur umum (lambat) dan
     halte di ruas itu tidak dilayani
   - 🚧 macet imbas kecelakaan di koridor sekitarnya
+- **Rintangan acak**: setiap kali misi dimulai (atau diulang), letak, jam, dan
+  kekuatan rintangan diacak, begitu juga jenis rintangan tambahannya. Tingkat
+  kesulitan tetap sama karena mengikuti resep misi (rintangan wajib bab, jumlah
+  rintangan, faktor batas waktu), dan bintang dihitung dari rute tercepat versi
+  acak itu. 8 misi buatan tangan tetap memakai rintangan tetap.
 - **Bintang**: misi gagal kalau lewat batas waktu atau saldo tidak cukup.
   Bintang 1–3 dihitung dari selisih waktu tiba dengan rute tercepat.
 
@@ -40,7 +45,7 @@ Tombol ⏭ melompat ke kejadian berikutnya.
 npm install
 npm run dev              # http://localhost:3000
 npm run build            # build produksi
-npm run check:missions      # validasi semua misi bisa diselesaikan
+npm run check:missions      # validasi semua misi (+30 variasi acak per misi)
 npm run generate:missions   # buat ulang 100 misi (deterministik)
 ```
 
@@ -58,7 +63,8 @@ internet, game tetap bisa dimainkan dengan latar gelap polos.
 | `lib/game/session.ts` | Mesin permainan deterministik: state pemain, perintah, jam |
 | `lib/game/solver.ts` | Rute tercepat (kunci jawaban bintang) dengan aturan yang sama persis |
 | `lib/game/missions.ts` | Tipe misi, 10 bab |
-| `lib/game/missionData.ts` | 100 misi (hasil generator, jangan diedit manual) |
+| `lib/game/missionData.ts` | 100 misi + resep rintangan (hasil generator, jangan diedit manual) |
+| `lib/game/obstacles.ts` | Pemasangan rintangan acak sesuai resep (dipakai generator & game) |
 | `lib/game/controller.ts` | Penghubung Phaser ↔ React (fase layar, rencana, kecepatan jam) |
 | `components/game/phaserGame.ts` | Scene Phaser: ubin peta, koridor, halte, bus, pemain, kamera |
 | `components/game/*.tsx` | UI: menu misi, briefing, HUD, panel rencana/real-time, hasil |

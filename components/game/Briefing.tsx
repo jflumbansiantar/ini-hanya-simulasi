@@ -1,5 +1,5 @@
 import { controller } from "@/lib/game/controller";
-import { MISSIONS, MISSIONS_PER_CHAPTER, type Mission } from "@/lib/game/missions";
+import { MISSIONS_PER_CHAPTER, missionIndex, type Mission } from "@/lib/game/missions";
 import { CORRIDOR_BY_ID, FARE_EARLY, FARE_NORMAL, busCapacity, type Hazard, type HazardKind } from "@/lib/game/world";
 import { formatClock, minutes, rupiah } from "./format";
 
@@ -65,7 +65,7 @@ export function ConditionList({ mission, now }: { mission: Mission; now?: number
 export default function Briefing() {
   const c = controller;
   const m = c.mission!;
-  const idx = MISSIONS.indexOf(m);
+  const idx = missionIndex(m.id);
   return (
     <div className="overlay">
       <div className="card briefCard">
@@ -103,6 +103,17 @@ export default function Briefing() {
           </div>
         </div>
         <ConditionList mission={m} />
+        {m.recipe && (
+          <div className="rerollRow">
+            <span className="dim small">
+              🎲 {c.randomized ? "Rintangan diacak" : "Rintangan versi tetap"} — berubah setiap kali misi dimainkan, tingkat
+              kesulitan sama.
+            </span>
+            <button className="linkBtn" onClick={() => c.rerollMission()}>
+              acak ulang
+            </button>
+          </div>
+        )}
         <div className="howto">
           {m.mode === "plan" ? (
             <>

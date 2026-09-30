@@ -11,28 +11,28 @@ import fs from "fs";
 import path from "path";
 import { CORRIDORS } from "../lib/corridors";
 import { CHAPTERS, MISSIONS_PER_CHAPTER, type Mission } from "../lib/game/missions";
-import { simulatePlan, type PlanLeg } from "../lib/game/session";
-import { solve, type Solution } from "../lib/game/solver";
-import { LINES, STOP_COORDS, type Conditions, type Line } from "../lib/game/world";
+import {
+  draftMission,
+  mulberry32,
+  randomTools,
+  recipeKinds,
+  ridesOf,
+  rollObstacles,
+  round5,
+  type Draft,
+  type Obstacle,
+  type Recipe,
+} from "../lib/game/obstacles";
+import { simulatePlan } from "../lib/game/session";
+import { solve } from "../lib/game/solver";
+import { LINES, STOP_COORDS } from "../lib/game/world";
 import { haversineKm } from "../lib/simulation";
 
 const hm = (h: number, m: number) => h * 60 + m;
 
 // ---------- RNG bertitik awal tetap ----------
-function mulberry32(seed: number) {
-  return () => {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 const rnd = mulberry32(20260930);
-const between = (a: number, b: number) => a + (b - a) * rnd();
-const intBetween = (a: number, b: number) => Math.floor(between(a, b + 1));
-const pick = <T>(xs: T[]): T => xs[Math.floor(rnd() * xs.length)];
-const round5 = (n: number) => Math.ceil(n / 5) * 5;
+const { between, intBetween, pick, pickSome } = randomTools(rnd);
 
 const TRUNKS = CORRIDORS.filter((c) => !c.parentId).map((c) => c.id);
 const ALL_IDS = CORRIDORS.map((c) => c.id);
@@ -140,35 +140,31 @@ const PURPOSES: [string, string][] = [
 ];
 
 // ---------- aturan per bab ----------
+// Rintangan tiap misi ditulis sebagai resep (lib/game/obstacles.ts): rintangan
+// wajib + rintangan tambahan yang jenisnya diacak. Game mengacak ulang letak,
+// kekuatan, dan jenis tambahan setiap kali misi dimainkan.
 interface ChapterRule {
   transfers: [number, number];
   duration: [number, number]; // menit tanpa rintangan
   slack: number; // batas waktu = durasi terbaik × slack
   subs: boolean; // boleh pakai subkoridor
   distractors: number;
-  hazards: (local: number) => Obstacle[];
+  recipe: (local: number) => { fixed: Obstacle[]; extra?: { pool: Obstacle[]; count: number } };
+  early?: (local: number) => boolean; // berangkat subuh (tarif Rp2.000)
 }
-type Obstacle = "redlight" | "private" | "queue" | "crowded" | "closed" | "accident" | "jam" | "saldo" | "early";
 
 const RULES: ChapterRule[] = [
-  { transfers: [0, 0], duration: [12, 40], slack: 2.0, subs: false, distractors: 1, hazards: () => [] },
-  { transfers: [1, 1], duration: [25, 60], slack: 1.8, subs: false, distractors: 1, hazards: (i) => (i >= 3 ? ["redlight"] : []) },
-  { transfers: [0, 1], duration: [20, 60], slack: 1.7, subs: false, distractors: 2, hazards: (i) => (i >= 3 ? ["queue", ...(i >= 7 ? ["redlight" as const] : [])] : []) },
-  { transfers: [1, 1], duration: [25, 70], slack: 1.6, subs: false, distractors: 2, hazards: (i) => ["crowded", ...(i >= 4 ? ["queue" as const] : [])] },
-  { transfers: [1, 2], duration: [30, 80], slack: 1.55, subs: true, distractors: 2, hazards: (i) => ["private", ...(i >= 3 ? ["redlight" as const] : []), ...(i >= 6 ? ["crowded" as const] : [])] },
-  { transfers: [1, 2], duration: [30, 85], slack: 1.5, subs: true, distractors: 3, hazards: (i) => [i % 2 ? "closed" : "saldo", ...(i >= 5 ? ["queue" as const] : []), ...(i === 4 || i === 8 ? ["early" as const] : [])] },
-  { transfers: [1, 2], duration: [30, 90], slack: 1.45, subs: true, distractors: 3, hazards: (i) => ["accident", ...(i >= 4 ? [pick(["queue", "redlight", "crowded"] as const)] : [])] },
-  { transfers: [2, 2], duration: [40, 100], slack: 1.4, subs: true, distractors: 3, hazards: (i) => ["accident", "jam", ...(i >= 5 ? [pick(["queue", "private", "crowded"] as const)] : [])] },
-  { transfers: [2, 3], duration: [45, 120], slack: 1.35, subs: true, distractors: 3, hazards: () => pickSome<Obstacle>(["queue", "crowded", "private", "redlight", "closed", "accident"], 3) },
-  { transfers: [2, 3], duration: [50, 140], slack: 1.28, subs: true, distractors: 4, hazards: (i) => ["accident", "jam", ...pickSome<Obstacle>(["queue", "crowded", "private", "redlight", "saldo"], i >= 5 ? 3 : 2)] },
+  { transfers: [0, 0], duration: [12, 40], slack: 2.0, subs: false, distractors: 1, recipe: () => ({ fixed: [] }) },
+  { transfers: [1, 1], duration: [25, 60], slack: 1.8, subs: false, distractors: 1, recipe: (i) => ({ fixed: i >= 3 ? ["redlight"] : [] }) },
+  { transfers: [0, 1], duration: [20, 60], slack: 1.7, subs: false, distractors: 2, recipe: (i) => ({ fixed: i >= 3 ? ["queue", ...(i >= 7 ? ["redlight" as const] : [])] : [] }) },
+  { transfers: [1, 1], duration: [25, 70], slack: 1.6, subs: false, distractors: 2, recipe: (i) => ({ fixed: ["crowded", ...(i >= 4 ? ["queue" as const] : [])] }) },
+  { transfers: [1, 2], duration: [30, 80], slack: 1.55, subs: true, distractors: 2, recipe: (i) => ({ fixed: ["private"], extra: i >= 3 ? { pool: ["redlight", "crowded", "queue"], count: i >= 6 ? 2 : 1 } : undefined }) },
+  { transfers: [1, 2], duration: [30, 85], slack: 1.5, subs: true, distractors: 3, recipe: (i) => ({ fixed: [i % 2 ? "closed" : "saldo"], extra: i >= 5 ? { pool: ["queue", "redlight", "crowded"], count: 1 } : undefined }), early: (i) => i === 4 || i === 8 },
+  { transfers: [1, 2], duration: [30, 90], slack: 1.45, subs: true, distractors: 3, recipe: (i) => ({ fixed: ["accident"], extra: i >= 4 ? { pool: ["queue", "redlight", "crowded"], count: 1 } : undefined }) },
+  { transfers: [2, 2], duration: [40, 100], slack: 1.4, subs: true, distractors: 3, recipe: (i) => ({ fixed: ["accident", "jam"], extra: i >= 5 ? { pool: ["queue", "private", "crowded"], count: 1 } : undefined }) },
+  { transfers: [2, 3], duration: [45, 120], slack: 1.35, subs: true, distractors: 3, recipe: () => ({ fixed: [], extra: { pool: ["queue", "crowded", "private", "redlight", "closed", "accident"], count: 3 } }) },
+  { transfers: [2, 3], duration: [50, 140], slack: 1.28, subs: true, distractors: 4, recipe: (i) => ({ fixed: ["accident", "jam"], extra: { pool: ["queue", "crowded", "private", "redlight", "saldo"], count: i >= 5 ? 3 : 2 } }) },
 ];
-
-function pickSome<T>(xs: T[], n: number): T[] {
-  const copy = [...xs];
-  const out: T[] = [];
-  while (out.length < n && copy.length) out.push(copy.splice(Math.floor(rnd() * copy.length), 1)[0]);
-  return out;
-}
 
 const FIRST_TIPS: Record<number, string> = {
   1: "🚦 Lampu merah menambah beberapa menit di setiap ruas yang ditandai.",
@@ -180,134 +176,7 @@ const FIRST_TIPS: Record<number, string> = {
   7: "Macet imbas kecelakaan juga memperlambat koridor lain di sekitarnya.",
 };
 
-// ---------- utilitas rute ----------
-interface Ride {
-  line: Line;
-  boardIdx: number;
-  alightIdx: number;
-}
-
-function ridesOf(from: string, legs: PlanLeg[]): { rides: Ride[]; transferStops: string[] } {
-  const rides: Ride[] = [];
-  const transferStops: string[] = [];
-  let at = from;
-  legs.forEach((leg, i) => {
-    if (leg.type === "ride") {
-      const line = LINES.get(leg.lineKey)!;
-      rides.push({ line, boardIdx: line.stopIndex.get(at)!, alightIdx: line.stopIndex.get(leg.alight)! });
-      at = leg.alight;
-    } else {
-      at = leg.to;
-    }
-    if (i < legs.length - 1) transferStops.push(at);
-  });
-  return { rides, transferStops };
-}
-
-const signature = (s: Solution) => s.legs.map((l) => (l.type === "ride" ? `${l.lineKey}>${l.alight}` : `w>${l.to}`)).join("|");
-
-function mission(base: Omit<Mission, "id" | "deadline">, deadline: number): Mission {
-  return { id: "", ...base, deadline };
-}
-
-// ---------- pemasangan rintangan ----------
-interface Draft {
-  conditions: Conditions;
-  start: number;
-  balance: number;
-  from: string;
-  to: string;
-}
-
-function place(kind: Obstacle, d: Draft, base: Solution, ch: number): boolean {
-  const { rides, transferStops } = ridesOf(d.from, base.legs);
-  const c = d.conditions;
-  const hz = (c.hazards ??= []);
-  const windowedOn = new Set(hz.filter((h) => h.start !== undefined).map((h) => h.corridor));
-  const segment = (r: Ride, span: number): [string, string] | null => {
-    const len = r.alightIdx - r.boardIdx;
-    if (len < span) return null;
-    const a = r.boardIdx + intBetween(0, len - span);
-    return [r.line.stops[a].n, r.line.stops[a + span].n];
-  };
-  const tripTimes = simulatePlan(mission({ ...d, title: "", story: "", mode: "live" } as Omit<Mission, "id" | "deadline">, d.start + 600), base.legs).trips;
-
-  switch (kind) {
-    case "redlight": {
-      const r = pick(rides);
-      const seg = segment(r, Math.min(2, r.alightIdx - r.boardIdx));
-      if (!seg) return false;
-      hz.push({ kind: "redlight", corridor: r.line.corridor.id, from: seg[0], to: seg[1], delay: +between(1.5, 2.5 + ch * 0.2).toFixed(1) });
-      return true;
-    }
-    case "private": {
-      const r = pick(rides);
-      const seg = segment(r, Math.min(intBetween(2, 3), r.alightIdx - r.boardIdx));
-      if (!seg) return false;
-      hz.push({ kind: "private", corridor: r.line.corridor.id, from: seg[0], to: seg[1], speed: +between(0.4, 0.65).toFixed(2) });
-      return true;
-    }
-    case "queue": {
-      const r = pick(rides);
-      const stop = r.line.stops[r.boardIdx].n;
-      (c.queues ??= {})[stop] = 10 * intBetween(6 + ch, 14 + ch * 2);
-      return true;
-    }
-    case "crowded": {
-      const r = pick(rides);
-      (c.crowdedCorridors ??= {})[r.line.corridor.id] = +between(0.3, 0.55).toFixed(2);
-      return true;
-    }
-    case "closed": {
-      if (!transferStops.length) return false;
-      const stop = pick(transferStops);
-      if (stop === d.from || stop === d.to) return false;
-      (c.closedStops ??= []).push(stop);
-      return true;
-    }
-    case "saldo": {
-      d.balance = -1; // diisi setelah solusi final diketahui
-      return true;
-    }
-    case "early": {
-      d.start = hm(5, intBetween(5, 40));
-      return true;
-    }
-    case "accident": {
-      const candidates = rides.filter((r) => r.alightIdx - r.boardIdx >= 2 && !windowedOn.has(r.line.corridor.id));
-      if (!candidates.length) return false;
-      const r = pick(candidates);
-      const seg = segment(r, Math.min(r.alightIdx - r.boardIdx, intBetween(2, 3)));
-      if (!seg) return false;
-      const trip = tripTimes[base.legs.findIndex((l) => l.type === "ride" && l.lineKey === r.line.key)];
-      if (!trip) return false;
-      const start = Math.round(Math.max(d.start, trip.startT - between(5, 20)));
-      const end = start + 5 * intBetween(7, 13 + ch);
-      hz.push({ kind: "accident", corridor: r.line.corridor.id, from: seg[0], to: seg[1], speed: 0.3, start, end });
-      return true;
-    }
-    case "jam": {
-      const acc = hz.find((h) => h.kind === "accident");
-      if (!acc) return false;
-      const center = STOP_COORDS.get(acc.from)!;
-      const options: { id: string; from: string; to: string }[] = [];
-      for (const id of new Set([...c.corridors, ...rides.map((r) => r.line.corridor.id)])) {
-        if (id === acc.corridor || hz.some((h) => h.corridor === id && h.start !== undefined)) continue;
-        const line = LINES.get(`${id}:forward`)!;
-        line.stops.forEach((s, i) => {
-          if (haversineKm(center, s) > 2.5) return;
-          const a = Math.max(0, i - 1);
-          const b = Math.min(line.stops.length - 1, i + 1);
-          if (b - a >= 1) options.push({ id, from: line.stops[a].n, to: line.stops[b].n });
-        });
-      }
-      if (!options.length) return false;
-      const o = pick(options);
-      hz.push({ kind: "jam", corridor: o.id, from: o.from, to: o.to, speed: +between(0.35, 0.55).toFixed(2), start: acc.start, end: acc.end! + 15 });
-      return true;
-    }
-  }
-}
+const noHazards = (d: Draft, deadline: number) => draftMission(d, deadline, 100000);
 
 // ---------- generator ----------
 const usedPairs = new Set<string>();
@@ -343,7 +212,7 @@ function generateOne(ch: number, local: number): Mission | null {
     const start = 5 * Math.round(between(s0, s1) / 5);
 
     const probe: Draft = { from, to, start, balance: 20000, conditions: { corridors: pool } };
-    const wide = solve(mission({ ...probe, title: "", story: "", mode: "live" }, start + 400));
+    const wide = solve(noHazards(probe, start + 400));
     if (!wide) continue;
     const transfers = wide.legs.length - 1;
     const dur = wide.arrival - start;
@@ -360,42 +229,29 @@ function generateOne(ch: number, local: number): Mission | null {
       (a, b) => ALL_IDS.indexOf(a) - ALL_IDS.indexOf(b)
     );
 
-    const d: Draft = { from, to, start, balance: 10000, conditions: { corridors } };
-    const base = solve(mission({ ...d, title: "", story: "", mode: "live" }, start + 400));
-    if (!base) continue;
+    const early = rule.early?.(local) ?? false;
+    const d: Draft = { from, to, start: early ? hm(5, intBetween(5, 40)) : start, balance: 10000, conditions: { corridors } };
+    const { fixed, extra } = rule.recipe(local);
+    const recipe: Recipe = { chapter: ch, slack: rule.slack, fixed, ...(extra ? { extra } : {}) };
 
-    const kinds = rule.hazards(local);
-    let ok = true;
-    for (const k of kinds) if (!place(k, d, base, ch)) ok = false;
-    if (!ok) {
-      reject("rintangan tidak bisa dipasang");
-      continue;
+    let m: Mission;
+    if (!fixed.length && !extra) {
+      const base = solve(noHazards(d, d.start + 500));
+      if (!base) continue;
+      m = draftMission(d, d.start + round5((base.arrival - d.start) * rule.slack));
+    } else {
+      const rolled = rollObstacles(d, recipeKinds(recipe, rnd), ch, rule.slack, rnd);
+      if (!rolled) {
+        reject("rintangan tidak layak");
+        continue;
+      }
+      if (rolled.deadline - rolled.start > rule.duration[1] * 1.8 * rule.slack) {
+        reject("terlalu lama dengan rintangan");
+        continue;
+      }
+      m = { ...rolled, recipe };
     }
-
-    const probeBalance = d.balance < 0 ? 20000 : d.balance;
-    const draftMission = mission({ ...d, balance: probeBalance, title: "", story: "", mode: "live" }, d.start + 500);
-    const best = solve(draftMission);
-    if (!best) {
-      reject("tidak ada rute dengan rintangan");
-      continue;
-    }
-    const bestDur = best.arrival - d.start;
-    if (bestDur > rule.duration[1] * 1.8) {
-      reject("terlalu lama dengan rintangan");
-      continue;
-    }
-    // rintangan harus terasa: memperlambat atau memaksa rute berbeda
-    const baseAgain = d.start === start ? base : solve(mission({ ...d, conditions: { corridors }, title: "", story: "", mode: "live" }, d.start + 400));
-    const physical = kinds.filter((k) => k !== "saldo" && k !== "early");
-    if (physical.length && baseAgain && best.arrival - baseAgain.arrival < 2 && signature(best) === signature(baseAgain)) {
-      reject("rintangan tidak berpengaruh");
-      continue;
-    }
-
-    const balance = d.balance < 0 ? best.spent : d.balance;
-    const deadline = d.start + round5(bestDur * rule.slack);
-    const mode = ch < 2 ? "plan" : ch >= 3 && local % 5 === 4 ? "plan" : "live";
-    const m = mission({ ...d, balance, title: "", story: "", mode }, deadline);
+    m.mode = ch < 2 ? "plan" : ch >= 3 && local % 5 === 4 ? "plan" : "live";
 
     // validasi akhir: solver & mesin game sepakat, dan masih bisa selesai
     const final = solve(m);
@@ -437,10 +293,10 @@ for (let ch = 0; ch < CHAPTERS.length; ch++) {
     const [title, story] = PURPOSES[purposeIdx++ % PURPOSES.length];
     m.title = title;
     m.story = story.replace("{to}", m.to).replace("{from}", m.from);
-    if (m.balance <= 3500) m.story += ` Saldo kartumu tinggal Rp${m.balance.toLocaleString("id-ID")}.`;
+    const saldo = m.recipe?.fixed.includes("saldo") || m.recipe?.extra?.pool.includes("saldo");
+    if (m.balance <= 3500 || saldo) m.story += " Saldo kartumu sedang mepet, hitung ongkosnya baik-baik.";
     // tips perkenalan rintangan bab ini di misi pertama yang memuatnya
-    const c = m.conditions;
-    const hasObstacle = !!(c.hazards?.length || c.queues || c.crowdedCorridors || c.closedStops || m.balance <= 3500);
+    const hasObstacle = !!(m.recipe?.fixed.length || m.recipe?.extra);
     if (!tipGiven && hasObstacle && FIRST_TIPS[ch]) {
       m.tips = FIRST_TIPS[ch];
       tipGiven = true;
