@@ -1,6 +1,6 @@
 import { controller } from "@/lib/game/controller";
 import type { Session } from "@/lib/game/session";
-import { LINES, lineLabel, type Line } from "@/lib/game/world";
+import { LINES, busCapacity, lineLabel, type Line } from "@/lib/game/world";
 import { ConditionList } from "./Briefing";
 import { formatClock, minutes } from "./format";
 import { PlanSteps } from "./PlanPanel";
@@ -28,16 +28,20 @@ function AlightPicker({ line, afterIdx, slot, target }: { line: Line; afterIdx: 
       {line.stops.slice(afterIdx + 1).map((s, k) => {
         const idx = afterIdx + 1 + k;
         const closed = w.isClosed(s.n);
+        // kecelakaan: halte dilewati kalau bus tiba saat halte tidak dilayani
+        const skipped = !closed && slot !== null && w.isClosedAt(s.n, w.arrivalTime(line, slot, idx));
         return (
           <button
             key={s.n}
             className={`option${idx === target ? " selected" : ""}${s.n === m.to ? " goal" : ""}`}
             disabled={closed}
             onClick={() => c.act((ss) => ss.setAlight(s.n))}
+            title={skipped ? "Bus tidak berhenti di sini karena kecelakaan" : undefined}
           >
             <span>
               {s.n}
               {closed && " ⛔"}
+              {skipped && " 💥"}
               {s.n === m.to && " ⚑"}
             </span>
             {slot !== null && <span className="eta">{formatClock(w.arrivalTime(line, slot, idx))}</span>}
@@ -94,6 +98,11 @@ function LiveControls({ session }: { session: Session }) {
           <div className="dim small">
             {a ? <>Bus berikutnya tiba {formatClock(a.time)} (~{minutes(a.time - session.now)})</> : "Tidak ada bus lagi."}
           </div>
+          {st.waitFor.queue > 0 && (
+            <div className="queueBox">
+              👥 <b>{st.waitFor.queue}</b> orang masih mengantre di depanmu · kapasitas bus {busCapacity(line.corridor)}
+            </div>
+          )}
           <button className="linkBtn" onClick={() => c.act((s) => {
               s.cancelWait();
               return null;
@@ -114,6 +123,9 @@ function LiveControls({ session }: { session: Session }) {
       <div className="status">
         📍 Di halte <b>{st.stop}</b>{" "}
         <span className="dim small">({st.inside ? "di dalam halte, transfer gratis" : "belum tap masuk"})</span>
+        {w.queueAt(st.stop) > 0 && (
+          <div className="queueBox">👥 Antrean panjang: {w.queueAt(st.stop)} orang di depanmu untuk bus mana pun.</div>
+        )}
       </div>
       {closed ? (
         <p className="bad small">Halte ini ditutup, bus tidak berhenti. Jalan kaki ke halte lain.</p>
@@ -163,7 +175,7 @@ export default function LivePanel() {
   const m = c.mission!;
   return (
     <aside className="panel">
-      <ConditionList mission={m} />
+      <ConditionList mission={m} now={s.now} />
       {m.mode === "plan" && s.plan ? (
         <>
           <h3>Rencana berjalan</h3>

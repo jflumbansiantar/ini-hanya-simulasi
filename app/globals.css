@@ -695,3 +695,78 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- bab & rintangan ---------- */
+.chapterTabs {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.chapterTab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 6px 0;
+  border-radius: 9px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+.chapterTab:hover:not(:disabled) {
+  border-color: rgba(76, 201, 240, 0.4);
+}
+.chapterTab.active {
+  background: rgba(76, 201, 240, 0.15);
+  border-color: var(--accent);
+}
+.chapterTab:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.chapterNum {
+  font-weight: 700;
+  font-size: 13px;
+}
+.chapterStars {
+  font-size: 10px;
+  color: var(--gold);
+}
+.chapterHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+.menuCard .missionList {
+  max-height: min(52vh, 560px);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.conditions li.active {
+  border-color: rgba(255, 107, 107, 0.7);
+  background: rgba(255, 107, 107, 0.18);
+}
+.conditions li.over {
+  opacity: 0.55;
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--panel-border);
+}
+.liveTag {
+  margin-left: 6px;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: var(--bad);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+.queueBox {
+  margin-top: 6px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  font-size: 12px;
+  background: rgba(249, 199, 79, 0.1);
+  border: 1px solid rgba(249, 199, 79, 0.3);
+}

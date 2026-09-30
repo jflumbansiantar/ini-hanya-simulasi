@@ -14,7 +14,13 @@ export type PlanLeg =
   | { type: "walk"; to: string };
 
 export type PlayerState =
-  | { kind: "stop"; stop: string; inside: boolean; waitFor: { lineKey: string; alight: string | null } | null }
+  | {
+      kind: "stop";
+      stop: string;
+      inside: boolean;
+      // queue = jumlah orang yang masih mengantre di depanmu untuk bus ini
+      waitFor: { lineKey: string; alight: string | null; queue: number } | null;
+    }
   | { kind: "ride"; lineKey: string; slot: number; boardIdx: number; alightIdx: number }
   | { kind: "walk"; from: string; to: string; startT: number; endT: number }
   | { kind: "done"; arrivedAt: number }
@@ -90,8 +96,9 @@ export class Session {
     } else if (this.lastOpenIdx(line, idx) < 0) {
       return "Semua halte di depan pada arah ini ditutup.";
     }
-    s.waitFor = { lineKey, alight };
-    this.note(`Menunggu ${lineLabel(line)} di ${s.stop}.`);
+    const queue = this.world.queueAt(s.stop);
+    s.waitFor = { lineKey, alight, queue };
+    this.note(`Menunggu ${lineLabel(line)} di ${s.stop}.` + (queue ? ` Antrean: ${queue} orang di depanmu.` : ""));
     return null;
   }
 
@@ -219,9 +226,24 @@ export class Session {
       const line = LINES.get(s.waitFor.lineKey)!;
       const idx = line.stopIndex.get(s.stop)!;
       const a = this.world.nextArrival(line, idx, this.now)!;
-      if (a.full) {
-        this.note(`${lineLabel(line)} tiba tapi penuh sesak — tidak bisa naik. Tunggu bus berikutnya.`, "warn");
+      // Urutan pemeriksaan harus sama dengan World.firstBoarding (dipakai solver).
+      if (this.world.isClosedAt(s.stop, a.time)) {
+        this.note(`${lineLabel(line)} lewat tanpa berhenti — halte ${s.stop} sedang tidak dilayani.`, "warn");
         this.now += 1e-6;
+        return;
+      }
+      const free = this.world.freeSpace(line, a.slot, idx);
+      if (s.waitFor.queue >= free) {
+        s.waitFor.queue -= free;
+        this.note(
+          free === 0
+            ? `${lineLabel(line)} tiba tapi penuh sesak — tidak ada yang bisa naik.`
+            : `${lineLabel(line)} tiba, ${free} orang di depanmu naik lalu bus penuh.` +
+                (s.waitFor.queue ? ` Masih ${s.waitFor.queue} orang di depanmu.` : " Kamu paling depan sekarang!"),
+          "warn"
+        );
+        this.now += 1e-6;
+        this.version++;
         return;
       }
       let fare = 0;
@@ -248,6 +270,14 @@ export class Session {
     if (s.kind === "ride") {
       const line = LINES.get(s.lineKey)!;
       const stop = line.stops[s.alightIdx].n;
+      if (this.world.isClosedAt(stop, this.now) && s.alightIdx < line.stops.length - 1) {
+        // halte tutup sementara (kecelakaan): bus tidak berhenti, turun di halte berikutnya
+        let next = s.alightIdx + 1;
+        while (next < line.stops.length - 1 && this.world.isClosedAt(line.stops[next].n, this.world.arrivalTime(line, s.slot, next))) next++;
+        s.alightIdx = next;
+        this.note(`Bus tidak berhenti di ${stop} (tidak dilayani sementara). Kamu turun di ${line.stops[next].n}.`, "warn");
+        return;
+      }
       this.trips.push({
         type: "ride",
         label: lineLabel(line),

@@ -92,18 +92,19 @@ export function solve(mission: Mission, world: World = new World(mission.conditi
         if (idx === line.stops.length - 1) continue;
         // tetap di bus yang sama selalu lebih baik daripada turun lalu naik lagi
         if (cur.leg?.type === "ride" && cur.leg.lineKey === line.key) continue;
-        const a = world.nextBoardable(line, idx, cur.t);
+        const a = world.firstBoarding(line, idx, cur.t, world.queueAt(cur.stop));
         if (!a) continue;
         const fare = cur.inside ? 0 : fareAt(a.time);
         const spent = cur.spent + fare;
         if (spent > mission.balance) continue;
         for (let j = idx + 1; j < line.stops.length; j++) {
           const stop = line.stops[j].n;
-          if (world.isClosed(stop)) continue;
+          const t = world.arrivalTime(line, a.slot, j);
+          if (world.isClosedAt(stop, t)) continue;
           const next: Label = {
             stop,
             inside: true,
-            t: world.arrivalTime(line, a.slot, j),
+            t,
             spent,
             prev: cur,
             leg: { type: "ride", lineKey: line.key, alight: stop },

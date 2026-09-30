@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import type { GameController, MapPath } from "@/lib/game/controller";
-import { STOP_COORDS, type World } from "@/lib/game/world";
+import { LINES, STOP_COORDS, hazardRange, type World } from "@/lib/game/world";
+import { formatClock } from "@/lib/simulation";
 import {
   MAX_TILE_ZOOM,
   MIN_TILE_ZOOM,
@@ -37,6 +38,9 @@ class MapScene extends Phaser.Scene {
   private network!: Phaser.GameObjects.Graphics;
   private highlight!: Phaser.GameObjects.Graphics;
   private marks!: Phaser.GameObjects.Graphics;
+  private hazardGfx!: Phaser.GameObjects.Graphics;
+  private hazardIcons: Phaser.GameObjects.Text[] = [];
+  private hazardKey = "";
   private labels = new Map<string, Phaser.GameObjects.Text>();
   private buses: Phaser.GameObjects.Image[] = [];
   private player!: Phaser.GameObjects.Image;
@@ -77,6 +81,7 @@ class MapScene extends Phaser.Scene {
     this.network = this.add.graphics().setDepth(10);
     this.highlight = this.add.graphics().setDepth(20);
     this.marks = this.add.graphics().setDepth(30);
+    this.hazardGfx = this.add.graphics().setDepth(15);
     this.ring = this.add.graphics().setDepth(49);
     this.player = this.add.image(0, 0, "player").setDepth(50).setVisible(false);
 
@@ -268,6 +273,91 @@ class MapScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Rintangan yang sedang aktif: ruas diwarnai + ikon, halte yang tidak
+   * dilayani sementara diberi tanda silang, dan jumlah antrean di halte.
+   * Digambar ulang hanya kalau set rintangan aktif atau zoom berubah.
+   */
+  private drawHazards(world: World | null, now: number, zoom: number, showAll: boolean) {
+    const active = world ? (showAll ? world.hazards : world.activeHazards(now)) : [];
+    const queues = world ? [...world.queues.entries()] : [];
+    const closedNow = world ? world.tempClosures.filter((c) => now >= c.start && now < c.end).map((c) => c.stop) : [];
+    const key = `${showAll}|${active.map((h) => world!.hazards.indexOf(h)).join(",")}|${closedNow.join(",")}|${queues.length}|${zoom.toFixed(3)}`;
+    if (key === this.hazardKey) return;
+    this.hazardKey = key;
+
+    const g = this.hazardGfx;
+    g.clear();
+    const px = 1 / zoom;
+    const style = {
+      private: { color: 0xb0b6c3, icon: "🚗" },
+      redlight: { color: 0xff4d4d, icon: "🚦" },
+      accident: { color: 0xe63946, icon: "💥" },
+      jam: { color: 0xf3722c, icon: "🚧" },
+    } as const;
+    const icons: { x: number; y: number; text: string }[] = [];
+
+    for (const h of active) {
+      const line = LINES.get(`${h.corridor}:forward`);
+      const range = line && hazardRange(line, h);
+      if (!line || !range) continue;
+      const br = line.dirMeta.breaks;
+      const pts = line.dirMeta.points.slice(br[range[0]], br[range[1]] + 1).map(project);
+      if (pts.length < 2) continue;
+      const st = style[h.kind];
+      if (h.kind === "private" || h.kind === "redlight") {
+        g.lineStyle(9 * px, st.color, 0.55);
+        dashedLine(g, pts, 8 * px, 6 * px);
+      } else {
+        g.lineStyle(12 * px, st.color, h.kind === "accident" ? 0.75 : 0.55);
+        strokePolyline(g, pts);
+        // garis pembatas putih putus-putus supaya beda dari warna koridor
+        g.lineStyle(3 * px, 0xffffff, 0.9);
+        dashedLine(g, pts, 6 * px, 6 * px);
+      }
+      const mid = pts[Math.floor(pts.length / 2)];
+      const until = h.kind === "accident" && h.end !== undefined ? ` s/d ${formatClock(h.end)}` : "";
+      icons.push({ x: mid.x, y: mid.y, text: `${st.icon}${until}` });
+    }
+    for (const stop of closedNow) {
+      const p = project(STOP_COORDS.get(stop)!);
+      const r = 7 * px;
+      g.fillStyle(0xe63946, 1).fillCircle(p.x, p.y, r + 2 * px);
+      g.lineStyle(2.5 * px, 0xffffff, 1);
+      g.lineBetween(p.x - r * 0.55, p.y - r * 0.55, p.x + r * 0.55, p.y + r * 0.55);
+      g.lineBetween(p.x - r * 0.55, p.y + r * 0.55, p.x + r * 0.55, p.y - r * 0.55);
+    }
+    for (const [stop, n] of queues) {
+      const p = project(STOP_COORDS.get(stop)!);
+      icons.push({ x: p.x, y: p.y + 22 * px, text: `👥 ${n}` });
+    }
+
+    while (this.hazardIcons.length < icons.length) {
+      this.hazardIcons.push(
+        this.add
+          .text(0, 0, "", {
+            fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
+            fontSize: "13px",
+            color: "#ffffff",
+            backgroundColor: "rgba(11,13,18,0.85)",
+            padding: { x: 4, y: 2 },
+            resolution: Math.max(1, window.devicePixelRatio || 1),
+          })
+          .setOrigin(0.5)
+          .setDepth(46)
+      );
+    }
+    this.hazardIcons.forEach((t, i) => {
+      const ic = icons[i];
+      if (!ic) {
+        t.setVisible(false);
+        return;
+      }
+      if (t.text !== ic.text) t.setText(ic.text);
+      t.setVisible(true).setPosition(ic.x, ic.y).setScale(px);
+    });
+  }
+
   private drawMarks(world: World, zoom: number) {
     const g = this.marks;
     g.clear();
@@ -390,6 +480,8 @@ class MapScene extends Phaser.Scene {
       this.drawnFor.pathsKey = pathsKey;
     }
     this.syncLabels(world, zoom);
+    const phase = this.ctl.phase;
+    this.drawHazards(phase === "menu" ? null : world, session?.now ?? 0, zoom, phase === "planning" || phase === "briefing");
 
     // bus
     const active = world && session ? world.activeBuses(session.now) : [];

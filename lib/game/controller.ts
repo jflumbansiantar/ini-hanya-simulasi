@@ -1,4 +1,4 @@
-import { MISSIONS, type Mission } from "./missions";
+import { MISSIONS, MISSIONS_PER_CHAPTER, type Mission } from "./missions";
 import { loadProgress, saveProgress, type Progress } from "./progress";
 import { Session, simulatePlan, type PlanLeg } from "./session";
 import { solve, starsFor, type Solution } from "./solver";
@@ -41,6 +41,7 @@ export class GameController {
   solution: Solution | null = null;
   result: Result | null = null;
   progress: Progress = {};
+  menuChapter = 0; // bab yang sedang dibuka di menu
 
   // mode rencana
   draft: PlanLeg[] = [];
@@ -60,6 +61,10 @@ export class GameController {
 
   init() {
     this.progress = loadProgress();
+    // buka menu di bab misi terdepan yang belum diselesaikan
+    let frontier = MISSIONS.findIndex((m, i) => this.isUnlocked(i) && !this.progress[m.id]);
+    if (frontier < 0) frontier = MISSIONS.length - 1;
+    this.menuChapter = Math.floor(frontier / MISSIONS_PER_CHAPTER);
     this.focus(MISSIONS.flatMap((m) => [STOP_COORDS.get(m.from)!, STOP_COORDS.get(m.to)!]));
     this.emit();
   }
@@ -85,6 +90,11 @@ export class GameController {
     this.camera = { seq: this.camera.seq + 1, points };
   }
 
+  setMenuChapter(ch: number) {
+    this.menuChapter = ch;
+    this.emit();
+  }
+
   isUnlocked(i: number): boolean {
     return i === 0 || (this.progress[MISSIONS[i - 1].id] ?? 0) > 0;
   }
@@ -94,6 +104,7 @@ export class GameController {
   openMission(i: number) {
     const m = MISSIONS[i];
     this.mission = m;
+    this.menuChapter = Math.floor(i / MISSIONS_PER_CHAPTER);
     this.world = new World(m.conditions);
     this.session = new Session(m);
     this.solution = solve(m, this.world);
