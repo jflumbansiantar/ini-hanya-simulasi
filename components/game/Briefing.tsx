@@ -6,6 +6,7 @@ import {
   FARE_EARLY,
   FARE_NORMAL,
   busCapacity,
+  stopsAround,
   stopsInZone,
   type Hazard,
   type HazardKind,
@@ -79,6 +80,16 @@ export function ConditionList({ mission, now, world }: { mission: Mission; now?:
       icon: "📢",
       text: `Tawuran/demo di sekitar ${zone.name} pukul ${formatClock(d.start)}–${formatClock(d.end)}: halte ${stops.join(", ")} ditutup.`,
       ...windowState(now, d.start, d.end),
+    });
+  }
+  for (const a of cond.areas ?? []) {
+    const stops = stopsAround(a.name, a.radiusKm).filter((n) => world?.stopLines.has(n) ?? true);
+    const when = `pukul ${formatClock(a.start)}–${formatClock(a.end)}`;
+    const effect = `bus dialihkan lewat jalan lain (${Math.round(a.speed * 100)}%)` + (stops.length ? `, halte ${stops.join(", ")} tidak dilayani` : "");
+    items.push({
+      icon: a.kind === "flood" ? "🌊" : "🔥",
+      text: a.kind === "flood" ? `Banjir di sekitar ${a.name} ${when}: ${effect}.` : `Kebakaran di sekitar halte ${a.name} ${when}: ${effect}.`,
+      ...windowState(now, a.start, a.end),
     });
   }
   for (const s of cond.closedStops ?? []) items.push({ icon: "⛔", text: `Halte ${s} ditutup — bus lewat tanpa berhenti.` });

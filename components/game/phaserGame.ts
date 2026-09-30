@@ -286,12 +286,14 @@ class MapScene extends Phaser.Scene {
     const closedNow = world ? world.tempClosures.filter((c) => now >= c.start && now < c.end).map((c) => c.stop) : [];
     const medical = world ? world.surpriseEvents().filter((e) => e.kind === "medical" && now >= e.start && now < e.end) : [];
     const demos = world ? world.demos.filter((d) => showAll || (now >= d.start && now < d.end)) : [];
+    const areas = world ? world.areas.filter((a) => showAll || (now >= a.start && now < a.end)) : [];
     const key = [
       showAll,
       active.map((h) => world!.hazards.indexOf(h)).join(","),
       closedNow.join(","),
       medical.length,
       demos.map((d) => d.zone).join(","),
+      areas.map((a) => a.name).join(","),
       queues.length,
       zoom.toFixed(3),
     ].join("|");
@@ -318,6 +320,17 @@ class MapScene extends Phaser.Scene {
       g.fillStyle(0xe63946, 0.13).fillCircle(c.x, c.y, r);
       g.lineStyle(2 * px, 0xe63946, 0.8).strokeCircle(c.x, c.y, r);
       icons.push({ x: c.x, y: c.y - r, text: `📢 Demo ${z.name} s/d ${formatClock(d.end)}` });
+    }
+    for (const a of areas) {
+      const center = STOP_COORDS.get(a.name);
+      if (!center) continue;
+      const c = project(center);
+      const r = a.radiusKm * (project({ lat: center.lat - 0.01, lng: center.lng }).y - c.y) / 1.112;
+      const color = a.kind === "flood" ? 0x4cc9f0 : 0xff7b00;
+      g.fillStyle(color, 0.16).fillCircle(c.x, c.y, r);
+      g.lineStyle(2 * px, color, 0.85).strokeCircle(c.x, c.y, r);
+      const label = a.kind === "flood" ? `🌊 Banjir ${a.name}` : `🔥 Kebakaran ${a.name}`;
+      icons.push({ x: c.x, y: c.y - r, text: `${label} s/d ${formatClock(a.end)}` });
     }
     for (const e of medical) {
       const p = project(STOP_COORDS.get(e.at!)!);
