@@ -1,5 +1,5 @@
 import { controller } from "@/lib/game/controller";
-import { MISSIONS } from "@/lib/game/missions";
+import { CHAPTERS, MISSIONS, MISSIONS_PER_CHAPTER } from "@/lib/game/missions";
 import { formatClock } from "./format";
 
 export function Stars({ n, max = 3 }: { n: number; max?: number }) {
@@ -17,6 +17,9 @@ export function Stars({ n, max = 3 }: { n: number; max?: number }) {
 export default function MissionMenu() {
   const c = controller;
   const total = MISSIONS.reduce((s, m) => s + (c.progress[m.id] ?? 0), 0);
+  const ch = c.menuChapter;
+  const first = ch * MISSIONS_PER_CHAPTER;
+  const missions = MISSIONS.slice(first, first + MISSIONS_PER_CHAPTER);
   return (
     <div className="overlay">
       <div className="card menuCard">
@@ -30,8 +33,40 @@ export default function MissionMenu() {
             <span>/ {MISSIONS.length * 3} ★</span>
           </div>
         </div>
+
+        <div className="chapterTabs" role="tablist">
+          {CHAPTERS.map((chapter, i) => {
+            const unlocked = c.isUnlocked(i * MISSIONS_PER_CHAPTER);
+            const stars = MISSIONS.slice(i * MISSIONS_PER_CHAPTER, (i + 1) * MISSIONS_PER_CHAPTER).reduce(
+              (s, m) => s + (c.progress[m.id] ?? 0),
+              0
+            );
+            return (
+              <button
+                key={chapter.title}
+                role="tab"
+                aria-selected={i === ch}
+                className={`chapterTab${i === ch ? " active" : ""}`}
+                disabled={!unlocked}
+                onClick={() => c.setMenuChapter(i)}
+                title={chapter.title}
+              >
+                <span className="chapterNum">{unlocked ? i + 1 : "🔒"}</span>
+                <span className="chapterStars">{stars}★</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="chapterHead">
+          <b>
+            Bab {ch + 1}: {CHAPTERS[ch].title}
+          </b>
+          <span className="dim small">{CHAPTERS[ch].blurb}</span>
+        </div>
+
         <ol className="missionList">
-          {MISSIONS.map((m, i) => {
+          {missions.map((m, k) => {
+            const i = first + k;
             const unlocked = c.isUnlocked(i);
             const stars = c.progress[m.id] ?? 0;
             return (

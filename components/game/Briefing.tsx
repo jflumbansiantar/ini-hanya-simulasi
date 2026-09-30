@@ -1,24 +1,61 @@
 import { controller } from "@/lib/game/controller";
-import { MISSIONS, type Mission } from "@/lib/game/missions";
-import { CORRIDOR_BY_ID, FARE_EARLY, FARE_NORMAL } from "@/lib/game/world";
+import { MISSIONS, MISSIONS_PER_CHAPTER, type Mission } from "@/lib/game/missions";
+import { CORRIDOR_BY_ID, FARE_EARLY, FARE_NORMAL, busCapacity, type Hazard, type HazardKind } from "@/lib/game/world";
 import { formatClock, minutes, rupiah } from "./format";
 
-export function ConditionList({ mission }: { mission: Mission }) {
+export const HAZARD_ICON: Record<HazardKind, string> = { private: "🚗", redlight: "🚦", accident: "💥", jam: "🚧" };
+
+function hazardText(h: Hazard): string {
+  const name = CORRIDOR_BY_ID.get(h.corridor)!.name;
+  const where = `${name} ${h.from}–${h.to}`;
+  const when = h.start !== undefined && h.end !== undefined ? ` pukul ${formatClock(h.start)}–${formatClock(h.end)}` : "";
+  const pct = `${Math.round((h.speed ?? 1) * 100)}%`;
+  switch (h.kind) {
+    case "private":
+      return `Kendaraan pribadi masuk busway ${where}${when}: bus hanya melaju ${pct}.`;
+    case "redlight":
+      return `Lampu merah di ${where}: +${h.delay} mnt di setiap ruas.`;
+    case "accident":
+      return `Kecelakaan di ${where}${when}: busway ditutup, bus lewat lajur umum (${pct}) dan halte di antaranya tidak dilayani.`;
+    case "jam":
+      return `Macet imbas kecelakaan di ${where}${when}: bus hanya melaju ${pct}.`;
+  }
+}
+
+export function ConditionList({ mission, now }: { mission: Mission; now?: number }) {
   const cond = mission.conditions;
-  const items: { icon: string; text: string }[] = [];
+  const items: { icon: string; text: string; active?: boolean; over?: boolean }[] = [];
+  for (const h of cond.hazards ?? []) {
+    const windowed = h.start !== undefined && h.end !== undefined;
+    items.push({
+      icon: HAZARD_ICON[h.kind],
+      text: hazardText(h),
+      active: now !== undefined && windowed && now >= h.start! && now < h.end!,
+      over: now !== undefined && windowed && now >= h.end!,
+    });
+  }
   for (const s of cond.closedStops ?? []) items.push({ icon: "⛔", text: `Halte ${s} ditutup — bus lewat tanpa berhenti.` });
+  for (const [stop, n] of Object.entries(cond.queues ?? {})) {
+    items.push({ icon: "👥", text: `Antrean panjang di halte ${stop}: ${n} orang di depanmu.` });
+  }
   for (const [id, f] of Object.entries(cond.slowCorridors ?? {})) {
     items.push({ icon: "🚦", text: `${CORRIDOR_BY_ID.get(id)!.name} macet: kecepatan ${Math.round(f * 100)}%.` });
   }
   for (const [id, p] of Object.entries(cond.crowdedCorridors ?? {})) {
-    items.push({ icon: "👥", text: `${CORRIDOR_BY_ID.get(id)!.name} padat: ~${Math.round(p * 100)}% bus tiba dalam keadaan penuh.` });
+    const c = CORRIDOR_BY_ID.get(id)!;
+    items.push({
+      icon: "🧍",
+      text: `${c.name} padat (kapasitas ${busCapacity(c)} orang/bus): ~${Math.round(p * 100)}% bus tiba sudah penuh.`,
+    });
   }
   if (!items.length) return null;
   return (
     <ul className="conditions">
       {items.map((it) => (
-        <li key={it.text}>
+        <li key={it.text} className={it.active ? "active" : it.over ? "over" : ""}>
           <span>{it.icon}</span> {it.text}
+          {it.active && <b className="liveTag">SEKARANG</b>}
+          {it.over && <span className="dim"> (sudah selesai)</span>}
         </li>
       ))}
     </ul>
@@ -33,7 +70,7 @@ export default function Briefing() {
     <div className="overlay">
       <div className="card briefCard">
         <div className="eyebrow">
-          Misi {idx + 1} · <span className={`modeTag ${m.mode}`}>{m.mode === "plan" ? "Mode rencana" : "Mode real-time"}</span>
+          Bab {Math.floor(idx / MISSIONS_PER_CHAPTER) + 1} · Misi {idx + 1} ·{" "}<span className={`modeTag ${m.mode}`}>{m.mode === "plan" ? "Mode rencana" : "Mode real-time"}</span>
         </div>
         <h2>{m.title}</h2>
         <p className="story">{m.story}</p>
