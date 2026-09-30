@@ -3,10 +3,11 @@ import { CORRIDOR_PATHS, type RoadPoint } from "./corridorPaths";
 
 export const AVG_SPEED_KMH = 22; // asumsi kecepatan rata-rata BRT termasuk waktu henti di halte
 
-interface DirectionMeta {
+export interface DirectionMeta {
   points: RoadPoint[]; // dense, road-following (lihat lib/corridorPaths.ts)
   cumKm: number[]; // jarak kumulatif sejak titik pertama, index-align dengan `points`
   legAt: number[]; // per titik: index leg halte-ke-halte (0..stops.length-2) yang menaunginya
+  breaks: number[]; // index titik tempat tiap halte berada, urut sesuai arah
 }
 
 export interface CorridorMeta {
@@ -17,16 +18,6 @@ export interface CorridorMeta {
 }
 
 export type Direction = "forward" | "backward";
-
-export interface Trip {
-  id: string;
-  corridorId: string;
-  direction: Direction;
-  lat: number;
-  lng: number;
-  fromStop: string;
-  toStop: string;
-}
 
 export function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371;
@@ -50,14 +41,14 @@ function buildDirectionMeta(points: RoadPoint[], breaks: number[]): DirectionMet
     while (leg < breaks.length - 2 && i >= breaks[leg + 1]) leg++;
     legAt[i] = leg;
   }
-  return { points, cumKm, legAt };
+  return { points, cumKm, legAt, breaks };
 }
 
 /**
  * Meta per koridor dihitung dari geometri jalan asli (lib/corridorPaths.ts,
- * hasil OSRM sekali jalan saat data-generation — lihat PRD §3) kalau
- * tersedia; fallback ke garis lurus antar-stop kalau tidak (seharusnya tidak
- * pernah terjadi untuk 37 koridor yang ada, hanya jaring pengaman).
+ * hasil OSRM sekali jalan saat data-generation) kalau tersedia; fallback ke
+ * garis lurus antar-stop kalau tidak (jaring pengaman untuk koridor baru
+ * yang geometrinya belum di-generate).
  */
 export function computeCorridorMeta(corridor: Corridor): CorridorMeta {
   const roadPath = CORRIDOR_PATHS[corridor.id];
@@ -70,75 +61,43 @@ export function computeCorridorMeta(corridor: Corridor): CorridorMeta {
     const fwdPoints: RoadPoint[] = corridor.stops.map((s) => ({ lat: s.lat, lng: s.lng }));
     const bwdPoints = [...fwdPoints].reverse();
     const fwdBreaks = fwdPoints.map((_, i) => i);
-    const bwdBreaks = [...fwdBreaks].reverse();
     forward = buildDirectionMeta(fwdPoints, fwdBreaks);
-    backward = buildDirectionMeta(bwdPoints, bwdBreaks);
+    backward = buildDirectionMeta(bwdPoints, fwdBreaks);
   }
   const totalKm = forward.cumKm[forward.cumKm.length - 1];
   const durationMin = (totalKm / AVG_SPEED_KMH) * 60;
   return { totalKm, durationMin, forward, backward };
 }
 
-function positionAlongDirection(
+/** Posisi di sepanjang geometri satu arah, `fraction` 0..1 dari total jarak. */
+export function positionAlongDirection(
   dirMeta: DirectionMeta,
   orderedStops: Stop[],
   fraction: number
-): { lat: number; lng: number; fromStop: string; toStop: string } {
+): { lat: number; lng: number; heading: number; fromStop: string; toStop: string } {
   const { points, cumKm, legAt } = dirMeta;
   const targetDist = Math.max(0, Math.min(1, fraction)) * cumKm[cumKm.length - 1];
-  let i = 0;
-  while (i < cumKm.length - 2 && cumKm[i + 1] < targetDist) i++;
+  let lo = 0;
+  let hi = cumKm.length - 2;
+  // binary search: segmen terakhir dengan cumKm[i] <= targetDist
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (cumKm[mid] <= targetDist) lo = mid;
+    else hi = mid - 1;
+  }
+  const i = Math.max(0, lo);
   const segLen = cumKm[i + 1] - cumKm[i];
   const segFrac = segLen > 0 ? (targetDist - cumKm[i]) / segLen : 0;
   const a = points[i];
-  const b = points[i + 1];
+  const b = points[i + 1] ?? a;
   const leg = legAt[i];
   return {
     lat: a.lat + (b.lat - a.lat) * segFrac,
     lng: a.lng + (b.lng - a.lng) * segFrac,
+    heading: Math.atan2(-(b.lat - a.lat), (b.lng - a.lng) * Math.cos((a.lat * Math.PI) / 180)),
     fromStop: orderedStops[leg].n,
     toStop: orderedStops[Math.min(leg + 1, orderedStops.length - 1)].n,
   };
-}
-
-/**
- * Diturunkan murni dari (corridor, simMinutes, meta) — tidak ada state bus
- * yang di-mutate antar-frame. Panggil ulang tiap tick jam simulasi.
- */
-export function getActiveTrips(
-  corridor: Corridor,
-  meta: CorridorMeta,
-  simMinutes: number
-): Trip[] {
-  const trips: Trip[] = [];
-  const { durationMin } = meta;
-  const { activeStart, activeEnd, headway } = corridor;
-  const windowLen = activeEnd - activeStart;
-  if (windowLen <= 0 || durationMin <= 0) return trips;
-
-  const lastSlot = Math.floor(windowLen / headway);
-  const directions: Direction[] = ["forward", "backward"];
-
-  for (const direction of directions) {
-    const dirMeta = direction === "forward" ? meta.forward : meta.backward;
-    const orderedStops = direction === "forward" ? corridor.stops : [...corridor.stops].reverse();
-    for (let slot = 0; slot <= lastSlot; slot++) {
-      const depart = activeStart + slot * headway;
-      if (depart > activeEnd) continue;
-      const elapsed = simMinutes - depart;
-      if (elapsed >= 0 && elapsed < durationMin) {
-        const fraction = elapsed / durationMin;
-        const pos = positionAlongDirection(dirMeta, orderedStops, fraction);
-        trips.push({
-          id: `${corridor.id}-${direction}-${slot}`,
-          corridorId: corridor.id,
-          direction,
-          ...pos,
-        });
-      }
-    }
-  }
-  return trips;
 }
 
 export function formatClock(simMinutes: number): string {
@@ -146,10 +105,4 @@ export function formatClock(simMinutes: number): string {
   const hh = String(Math.floor(m / 60)).padStart(2, "0");
   const mm = String(m % 60).padStart(2, "0");
   return `${hh}:${mm}`;
-}
-
-export function directionLabel(corridor: Corridor, direction: Direction): string {
-  const first = corridor.stops[0].n;
-  const last = corridor.stops[corridor.stops.length - 1].n;
-  return direction === "forward" ? `${first} → ${last}` : `${last} → ${first}`;
 }

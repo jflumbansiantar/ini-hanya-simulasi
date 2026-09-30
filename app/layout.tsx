@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Transjakarta Line Simulator",
+  title: "Penumpang TJ",
   description:
-    "Simulasi visual pergerakan bus Transjakarta di 13 koridor trunk BRT di atas peta Jabodetabek — bukan pelacak real-time resmi.",
+    "Game 2D puzzle rute: sampai tujuan tepat waktu dengan bus Transjakarta di atas peta Jakarta asli. Simulasi, bukan data resmi.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

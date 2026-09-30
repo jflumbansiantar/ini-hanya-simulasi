@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Penumpang TJ
 
-## Getting Started
+Game 2D puzzle rute: kamu jadi penumpang Transjakarta yang harus sampai tujuan
+tepat waktu, di atas peta Jakarta asli. Dibangun dengan Next.js + Phaser 3.
 
-First, run the development server:
+> Simulasi — jadwal, headway, dan koordinat halte adalah perkiraan, bukan data
+> resmi Transjakarta.
+
+## Cara main
+
+- **8 misi berurutan**, dari mudah ke sulit. Misi berikutnya terbuka setelah
+  misi sebelumnya selesai. Progres (bintang) tersimpan di `localStorage`.
+- **Mode rencana** (misi 1–3): jam berhenti selama kamu menyusun rencana
+  (naik koridor apa, turun di mana, atau jalan kaki), lalu rencana dijalankan.
+- **Mode real-time** (misi 4–8): jam berjalan. Di halte, pilih bus yang mau
+  ditunggu. Di dalam bus, pilih halte turun lewat panel atau dengan klik halte
+  di peta.
+- **Tarif mirip TJ**: Rp3.500 per tap (Rp2.000 pukul 05.00–07.00). Transfer di
+  halte yang sama gratis. Keluar halte (jalan kaki) berarti harus tap lagi.
+- **Event**: halte ditutup, koridor macet (bus lebih lambat), dan bus penuh
+  (tidak bisa naik, tunggu bus berikutnya).
+- **Bintang**: misi gagal kalau lewat batas waktu atau saldo tidak cukup.
+  Bintang 1–3 dihitung dari selisih waktu tiba dengan rute tercepat.
+
+Kontrol: geser peta dengan drag, zoom dengan scroll, dan jeda dengan spasi.
+Tombol ⏭ melompat ke kejadian berikutnya.
+
+## Menjalankan
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev              # http://localhost:3000
+npm run build            # build produksi
+npm run check:missions   # validasi semua misi bisa diselesaikan
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ubin peta dimuat langsung dari CARTO (`basemaps.cartocdn.com`). Tanpa akses
+internet, game tetap bisa dimainkan dengan latar gelap polos.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Struktur
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Path | Isi |
+|---|---|
+| `lib/corridors.ts` | Data 106 koridor & subkoridor (halte, headway, jam operasi) |
+| `lib/corridorPaths.ts` | Geometri jalan per koridor (hasil `scripts/fetch-road-geometry.js`) |
+| `lib/simulation.ts` | Jarak, meta koridor, posisi di sepanjang jalur |
+| `lib/game/world.ts` | Jadwal bus per arah, kondisi misi (halte tutup, macet, penuh), jalan kaki, tarif |
+| `lib/game/session.ts` | Mesin permainan deterministik: state pemain, perintah, jam |
+| `lib/game/solver.ts` | Rute tercepat (kunci jawaban bintang) dengan aturan yang sama persis |
+| `lib/game/missions.ts` | Daftar misi |
+| `lib/game/controller.ts` | Penghubung Phaser ↔ React (fase layar, rencana, kecepatan jam) |
+| `components/game/phaserGame.ts` | Scene Phaser: ubin peta, koridor, halte, bus, pemain, kamera |
+| `components/game/*.tsx` | UI: menu misi, briefing, HUD, panel rencana/real-time, hasil |
+| `scripts/check-missions.ts` | Cek setiap misi punya solusi dan mesin = solver |
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Menambah misi: tambahkan entri di `lib/game/missions.ts`, lalu jalankan
+`npm run check:missions` untuk memastikan misi bisa diselesaikan dan batas
+waktunya masuk akal. Batas waktu idealnya sekitar 1,5× durasi rute tercepat.
