@@ -1,5 +1,6 @@
 import type { Conditions } from "./world";
 import { MISSION_DATA } from "./missionData";
+import type { Recipe } from "./obstacles";
 
 export type MissionMode = "plan" | "live";
 
@@ -15,6 +16,8 @@ export interface Mission {
   balance: number; // saldo kartu awal (Rp)
   conditions: Conditions;
   tips?: string;
+  /** Resep rintangan; kalau ada, rintangan diacak ulang setiap kali misi dimainkan. */
+  recipe?: Recipe;
 }
 
 export interface Chapter {
@@ -44,3 +47,8 @@ export const MISSIONS_PER_CHAPTER = 10;
  * saldo yang ada. Jalankan `npm run check:missions` setelah mengubahnya.
  */
 export const MISSIONS: Mission[] = MISSION_DATA;
+
+/** Posisi misi (0-based) berdasarkan id — misi yang diacak adalah salinan, jadi jangan pakai indexOf. */
+export function missionIndex(id: string): number {
+  return MISSIONS.findIndex((m) => m.id === id);
+}

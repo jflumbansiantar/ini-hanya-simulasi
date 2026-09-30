@@ -1,36 +1,71 @@
 // Validasi misi: setiap misi harus bisa diselesaikan (solver menemukan rute
 // sebelum batas waktu) dan menjalankan rute solver lewat mesin permainan
-// harus menghasilkan waktu tiba yang sama. Jalankan: npx tsx scripts/check-missions.ts
-import { MISSIONS } from "../lib/game/missions";
-import { solve } from "../lib/game/solver";
+// harus menghasilkan waktu tiba yang sama. Misi dengan resep rintangan juga
+// diacak dengan banyak seed, dan setiap versi acak dicek dengan cara yang sama.
+// Jalankan: npm run check:missions   (tambahkan --verbose untuk rute per misi)
+import { MISSIONS, type Mission } from "../lib/game/missions";
+import { randomizeMission } from "../lib/game/obstacles";
 import { simulatePlan } from "../lib/game/session";
-import { World, LINES, lineLabel } from "../lib/game/world";
+import { solve } from "../lib/game/solver";
+import { LINES, lineLabel } from "../lib/game/world";
 import { formatClock } from "../lib/simulation";
 
-let failed = false;
+const SEEDS = 30;
+const verbose = process.argv.includes("--verbose");
+
+/** null = OK, selain itu alasan gagal. */
+function check(m: Mission): { error: string | null; arrival?: number } {
+  const sol = solve(m);
+  if (!sol) return { error: "tidak ada rute sebelum batas waktu" };
+  const s = simulatePlan(m, sol.legs);
+  if (s.state.kind !== "done" || Math.abs(s.state.arrivedAt - sol.arrival) > 1e-6) {
+    return { error: `mesin (${JSON.stringify(s.state)}) ≠ solver (${sol.arrival})` };
+  }
+  return { error: null, arrival: sol.arrival };
+}
+
+let failed = 0;
+let rolls = 0;
+let fallbacks = 0;
 for (const m of MISSIONS) {
-  const world = new World(m.conditions);
-  const sol = solve(m, world);
-  if (!sol) {
-    console.log(`✗ ${m.id} ${m.title}: TIDAK ADA RUTE`);
-    failed = true;
+  const fixed = check(m);
+  if (fixed.error) {
+    console.log(`✗ ${m.id} ${m.title} (versi tetap): ${fixed.error}`);
+    failed++;
     continue;
   }
-  const s = simulatePlan(m, sol.legs);
-  const ok = s.state.kind === "done" && Math.abs(s.state.arrivedAt - sol.arrival) < 1e-6;
-  if (!ok) console.log("    solver", sol.arrival);
-  if (!ok) failed = true;
-  const slack = m.deadline - sol.arrival;
-  console.log(
-    `${ok ? "✓" : "✗"} ${m.id} ${m.title}: tiba ${formatClock(sol.arrival)} (${Math.round(sol.arrival - m.start)} mnt, sisa ${Math.round(slack)} mnt sebelum batas), Rp${sol.spent}`
-  );
-  for (const leg of sol.legs) {
-    console.log("    " + (leg.type === "ride" ? `${lineLabel(LINES.get(leg.lineKey)!)} → turun ${leg.alight}` : `jalan kaki → ${leg.to}`));
+  let note = "";
+  if (m.recipe) {
+    // kelonggaran waktu (batas − durasi tercepat) sebagai ukuran tingkat kesulitan
+    const ratios: number[] = [];
+    for (let seed = 1; seed <= SEEDS; seed++) {
+      const { mission, randomized } = randomizeMission(m, seed * 7919);
+      rolls++;
+      if (!randomized) {
+        fallbacks++;
+        continue;
+      }
+      const r = check(mission);
+      if (r.error) {
+        console.log(`✗ ${m.id} ${m.title} (seed ${seed}): ${r.error}`);
+        failed++;
+        continue;
+      }
+      ratios.push((mission.deadline - mission.start) / (r.arrival! - mission.start));
+    }
+    const min = Math.min(...ratios).toFixed(2);
+    const max = Math.max(...ratios).toFixed(2);
+    note = ` · ${ratios.length}/${SEEDS} variasi acak, batas waktu ${min}–${max}× rute tercepat`;
   }
-  if (!ok) console.log("    engine:", JSON.stringify(s.state));
+  console.log(`✓ ${m.id} ${m.title}: tiba ${formatClock(fixed.arrival!)} (batas ${formatClock(m.deadline)})${note}`);
+  if (verbose) {
+    for (const leg of solve(m)!.legs) {
+      console.log("    " + (leg.type === "ride" ? `${lineLabel(LINES.get(leg.lineKey)!)} → turun ${leg.alight}` : `jalan kaki → ${leg.to}`));
+    }
+  }
 }
-if (process.argv.includes("--walks")) {
-  const w = new World({ corridors: [...LINES.values()].map((l) => l.corridor.id).filter((v, i, a) => a.indexOf(v) === i) });
-  for (const [a, links] of w.walkLinks) console.log(a, "->", links.map((l) => `${l.to} ${Math.round(l.km * 1000)}m`).join(", "));
-}
+console.log(
+  `\n${MISSIONS.length - failed}/${MISSIONS.length} misi OK · ${rolls - fallbacks}/${rolls} pengacakan berhasil` +
+    ` (${fallbacks} kembali ke versi tetap)`
+);
 process.exit(failed ? 1 : 0);

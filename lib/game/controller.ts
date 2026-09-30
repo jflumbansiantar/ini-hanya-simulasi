@@ -1,4 +1,5 @@
-import { MISSIONS, MISSIONS_PER_CHAPTER, type Mission } from "./missions";
+import { MISSIONS, MISSIONS_PER_CHAPTER, missionIndex, type Mission } from "./missions";
+import { randomizeMission } from "./obstacles";
 import { loadProgress, saveProgress, type Progress } from "./progress";
 import { Session, simulatePlan, type PlanLeg } from "./session";
 import { solve, starsFor, type Solution } from "./solver";
@@ -42,6 +43,7 @@ export class GameController {
   result: Result | null = null;
   progress: Progress = {};
   menuChapter = 0; // bab yang sedang dibuka di menu
+  randomized = false; // rintangan misi ini hasil acak (bukan versi tetap)
 
   // mode rencana
   draft: PlanLeg[] = [];
@@ -101,9 +103,15 @@ export class GameController {
 
   // ---------- alur layar ----------
 
+  /**
+   * Buka briefing misi `i`. Misi yang punya resep diacak ulang rintangannya
+   * setiap kali dibuka (termasuk saat "Ulangi"), dengan tingkat kesulitan yang
+   * sama; kunci jawaban bintang dihitung dari versi acak itu.
+   */
   openMission(i: number) {
-    const m = MISSIONS[i];
+    const { mission: m, randomized } = randomizeMission(MISSIONS[i], Math.floor(Math.random() * 2 ** 31));
     this.mission = m;
+    this.randomized = randomized;
     this.menuChapter = Math.floor(i / MISSIONS_PER_CHAPTER);
     this.world = new World(m.conditions);
     this.session = new Session(m);
@@ -116,6 +124,11 @@ export class GameController {
     this.phase = "briefing";
     this.focus([STOP_COORDS.get(m.from)!, STOP_COORDS.get(m.to)!]);
     this.emit();
+  }
+
+  /** Buka ulang misi yang sama dengan rintangan acak baru. */
+  rerollMission() {
+    if (this.mission) this.openMission(missionIndex(this.mission.id));
   }
 
   startMission() {
@@ -145,7 +158,7 @@ export class GameController {
   }
 
   nextMission() {
-    const i = MISSIONS.findIndex((m) => m.id === this.mission?.id);
+    const i = this.mission ? missionIndex(this.mission.id) : -1;
     if (i >= 0 && i + 1 < MISSIONS.length) this.openMission(i + 1);
     else this.backToMenu();
   }

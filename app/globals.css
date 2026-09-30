@@ -770,3 +770,13 @@ button {
   background: rgba(249, 199, 79, 0.1);
   border: 1px solid rgba(249, 199, 79, 0.3);
 }
+.rerollRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: -4px 0 12px;
+}
+.rerollRow .linkBtn {
+  white-space: nowrap;
+}

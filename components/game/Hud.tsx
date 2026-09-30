@@ -1,5 +1,5 @@
 import { controller, SPEEDS } from "@/lib/game/controller";
-import { MISSIONS } from "@/lib/game/missions";
+import { missionIndex } from "@/lib/game/missions";
 import { fareAt } from "@/lib/game/world";
 import { formatClock, minutes, rupiah } from "./format";
 
@@ -14,7 +14,7 @@ export default function Hud() {
     <div className="hud">
       <div className="hudTop">
         <span className="hudMission">
-          Misi {MISSIONS.indexOf(m) + 1} · {m.title}
+          Misi {missionIndex(m.id) + 1} · {m.title}
         </span>
         <button className="iconBtn" onClick={() => c.backToMenu()} title="Keluar ke menu">
           ✕
