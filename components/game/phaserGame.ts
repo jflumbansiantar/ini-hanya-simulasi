@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import type { GameController, MapPath } from "@/lib/game/controller";
+import { TILE_TINT, tileUrl } from "@/lib/game/tiles";
 import { DEMO_ZONES, LINES, STOP_COORDS, hazardRange, type World } from "@/lib/game/world";
 import { formatClock } from "@/lib/simulation";
 import {
@@ -14,7 +15,7 @@ import {
 } from "@/lib/game/projection";
 
 /**
- * Peta game di Phaser. Ubin peta CARTO (OSM) dimuat sendiri oleh loader
+ * Peta game di Phaser. Ubin peta (default OpenStreetMap, lihat lib/game/tiles.ts) dimuat sendiri oleh loader
  * Phaser sesuai posisi & zoom kamera; semua objek game digambar dalam
  * koordinat dunia (lib/game/projection.ts) dan diskalakan 1/zoom supaya
  * ukurannya di layar tetap.
@@ -23,10 +24,9 @@ import {
 const MIN_CAM_ZOOM = 2 ** (MIN_TILE_ZOOM - WORLD_ZOOM);
 const MAX_CAM_ZOOM = 2 ** (MAX_TILE_ZOOM - WORLD_ZOOM);
 const MAX_TEXTURES = 350;
-const TILE_URL = (z: number, x: number, y: number) =>
-  `https://${"abcd"[(x + y) % 4]}.basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`;
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color;
+const TILE_TINT_COLOR = hex(TILE_TINT);
 
 class MapScene extends Phaser.Scene {
   private ctl!: GameController;
@@ -190,7 +190,8 @@ class MapScene extends Phaser.Scene {
               .image(x * size - ORIGIN.x, y * size - ORIGIN.y, key)
               .setOrigin(0)
               .setDisplaySize(size + size / 256, size + size / 256)
-              .setDepth(-100 + z);
+              .setDepth(-100 + z)
+              .setTint(TILE_TINT_COLOR);
             this.tiles.set(key, img);
           }
           this.tiles.get(key)!.setDepth(0).setVisible(true);
@@ -198,7 +199,7 @@ class MapScene extends Phaser.Scene {
           allReady = false;
           if (!this.pending.has(key)) {
             this.pending.add(key);
-            this.load.image(key, TILE_URL(z, x, y));
+            this.load.image(key, tileUrl(z, x, y));
             queued = true;
           }
         }
