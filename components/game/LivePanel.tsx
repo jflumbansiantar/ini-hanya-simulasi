@@ -5,8 +5,9 @@ import { ConditionList } from "./Briefing";
 import { formatClock, minutes } from "./format";
 import { PlanSteps } from "./PlanPanel";
 
+/** Seluruh catatan perjalanan, terbaru di atas (panel bisa di-scroll). */
 function EventLog({ session }: { session: Session }) {
-  const items = session.log.slice(-6).reverse();
+  const items = [...session.log].reverse();
   return (
     <ul className="log">
       {items.map((e, i) => (
