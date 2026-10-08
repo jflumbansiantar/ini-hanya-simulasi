@@ -1,13 +1,12 @@
 import Phaser from "phaser";
 import type { GameController, MapPath } from "@/lib/game/controller";
-import { TILE_TINT, tileUrl } from "@/lib/game/tiles";
 import { DEMO_ZONES, LINES, STOP_COORDS, hazardRange, type World } from "@/lib/game/world";
 import { formatClock } from "@/lib/simulation";
+import { BasemapRenderer, SEA, type Basemap } from "./basemapTiles";
 import {
   MAX_TILE_ZOOM,
   MIN_TILE_ZOOM,
   ORIGIN,
-  TILE_SIZE,
   WORLD_HEIGHT,
   WORLD_WIDTH,
   WORLD_ZOOM,
@@ -15,25 +14,29 @@ import {
 } from "@/lib/game/projection";
 
 /**
- * Peta game di Phaser. Ubin peta (default OpenStreetMap, lihat lib/game/tiles.ts) dimuat sendiri oleh loader
- * Phaser sesuai posisi & zoom kamera; semua objek game digambar dalam
- * koordinat dunia (lib/game/projection.ts) dan diskalakan 1/zoom supaya
- * ukurannya di layar tetap.
+ * Peta game di Phaser. Peta dasar adalah data vektor statis milik game
+ * sendiri (public/basemap.json, dibuat oleh scripts/build-basemap.ts) —
+ * tidak ada request ke server peta luar. Semua objek digambar dalam
+ * koordinat dunia (lib/game/projection.ts); garis & label diskalakan 1/zoom
+ * supaya ukurannya di layar tetap.
  */
 
 const MIN_CAM_ZOOM = 2 ** (MIN_TILE_ZOOM - WORLD_ZOOM);
 const MAX_CAM_ZOOM = 2 ** (MAX_TILE_ZOOM - WORLD_ZOOM);
-const MAX_TEXTURES = 350;
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color;
-const TILE_TINT_COLOR = hex(TILE_TINT);
+
+const MAX_TILES = 300; // tekstur ubin yang disimpan (LRU)
+const TILES_PER_FRAME = 4; // batasi kerja render ubin per frame supaya tidak tersendat
 
 class MapScene extends Phaser.Scene {
   private ctl!: GameController;
+  private basemapRenderer: BasemapRenderer | null = null;
   private tiles = new Map<string, Phaser.GameObjects.Image>();
   private tileTextures: string[] = []; // urutan LRU
-  private pending = new Set<string>();
-  private failed = new Set<string>();
+  private districtLabels: Phaser.GameObjects.Text[] = [];
+  private cityLabels: Phaser.GameObjects.Text[] = [];
+  private labelZoom = 0;
 
   private network!: Phaser.GameObjects.Graphics;
   private highlight!: Phaser.GameObjects.Graphics;
@@ -62,20 +65,15 @@ class MapScene extends Phaser.Scene {
 
   create() {
     const cam = this.cameras.main;
-    cam.setBackgroundColor("#0b0d12");
+    cam.setBackgroundColor(SEA);
     cam.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
     cam.setZoom(2 ** (11 - WORLD_ZOOM));
     cam.centerOn(WORLD_WIDTH / 2, WORLD_HEIGHT / 2);
 
-    this.load.setCORS("anonymous");
-    this.load.on(Phaser.Loader.Events.FILE_COMPLETE, (key: string) => {
-      this.pending.delete(key);
-      this.tileTextures.push(key);
-    });
-    this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, (file: Phaser.Loader.File) => {
-      this.pending.delete(file.key);
-      this.failed.add(file.key);
-    });
+    // peta dasar statis dari server game sendiri; kalau gagal dimuat, latar polos tetap bisa dimainkan
+    this.load.json("basemap", "/basemap.json");
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => this.buildBasemap());
+    this.load.start();
 
     this.makeTextures();
     this.network = this.add.graphics().setDepth(10);
@@ -164,50 +162,80 @@ class MapScene extends Phaser.Scene {
     return best;
   }
 
-  // ---------- ubin peta ----------
+  // ---------- peta dasar statis ----------
 
-  private updateTiles() {
+  private buildBasemap() {
+    const data = this.cache.json.get("basemap") as Basemap | undefined;
+    if (!data?.districts) return;
+    this.basemapRenderer = new BasemapRenderer(data, window.devicePixelRatio || 1);
+    const font = "system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    const resolution = Math.max(1, window.devicePixelRatio || 1);
+    for (const d of data.districts) {
+      this.districtLabels.push(
+        this.add
+          .text(d.label[0], d.label[1], d.name, { fontFamily: font, fontSize: "11px", color: "#6a7385", resolution })
+          .setOrigin(0.5)
+          .setDepth(-5)
+      );
+    }
+    for (const c of data.cities) {
+      this.cityLabels.push(
+        this.add
+          .text(c.label[0], c.label[1], c.name.toUpperCase(), {
+            fontFamily: font,
+            fontSize: "13px",
+            fontStyle: "bold",
+            color: "#838da0",
+            letterSpacing: 2,
+            resolution,
+          })
+          .setOrigin(0.5)
+          .setDepth(-4)
+      );
+    }
+    this.labelZoom = 0;
+  }
+
+  /** Ubin peta dasar untuk area kamera (dirender lokal, lihat basemapTiles.ts) + label. */
+  private updateBasemap(zoom: number) {
+    if (!this.basemapRenderer) return;
     const cam = this.cameras.main;
-    const z = Phaser.Math.Clamp(Math.round(WORLD_ZOOM + Math.log2(cam.zoom)), MIN_TILE_ZOOM, MAX_TILE_ZOOM);
-    const size = TILE_SIZE * 2 ** (WORLD_ZOOM - z);
+    const z = Phaser.Math.Clamp(Math.round(WORLD_ZOOM + Math.log2(zoom)), MIN_TILE_ZOOM, MAX_TILE_ZOOM);
+    const size = BasemapRenderer.tileWorldSize(z);
     const v = cam.worldView;
-    const n = 2 ** z;
-    const x0 = Math.max(0, Math.floor((v.x + ORIGIN.x) / size));
-    const x1 = Math.min(n - 1, Math.floor((v.right + ORIGIN.x) / size));
-    const y0 = Math.max(0, Math.floor((v.y + ORIGIN.y) / size));
-    const y1 = Math.min(n - 1, Math.floor((v.bottom + ORIGIN.y) / size));
+    const x0 = Math.floor((v.x + ORIGIN.x) / size);
+    const x1 = Math.floor((v.right + ORIGIN.x) / size);
+    const y0 = Math.floor((v.y + ORIGIN.y) / size);
+    const y1 = Math.floor((v.bottom + ORIGIN.y) / size);
 
     const wanted = new Set<string>();
+    let budget = TILES_PER_FRAME;
     let allReady = true;
-    let queued = false;
     for (let x = x0; x <= x1; x++) {
       for (let y = y0; y <= y1; y++) {
-        const key = `t${z}/${x}/${y}`;
+        const key = `b${z}/${x}/${y}`;
         wanted.add(key);
-        if (this.textures.exists(key)) {
-          if (!this.tiles.has(key)) {
-            const img = this.add
+        if (!this.textures.exists(key)) {
+          if (budget-- <= 0) {
+            allReady = false;
+            continue;
+          }
+          this.textures.addCanvas(key, this.basemapRenderer.renderTile(z, x, y));
+          this.tileTextures.push(key);
+        }
+        if (!this.tiles.has(key)) {
+          this.tiles.set(
+            key,
+            this.add
               .image(x * size - ORIGIN.x, y * size - ORIGIN.y, key)
               .setOrigin(0)
               .setDisplaySize(size + size / 256, size + size / 256)
-              .setDepth(-100 + z)
-              .setTint(TILE_TINT_COLOR);
-            this.tiles.set(key, img);
-          }
-          this.tiles.get(key)!.setDepth(0).setVisible(true);
-        } else if (!this.failed.has(key)) {
-          allReady = false;
-          if (!this.pending.has(key)) {
-            this.pending.add(key);
-            this.load.image(key, tileUrl(z, x, y));
-            queued = true;
-          }
+          );
         }
+        this.tiles.get(key)!.setDepth(-50).setVisible(true);
       }
     }
-    if (queued && !this.load.isLoading()) this.load.start();
-
-    // ubin zoom lain tetap tampil sebagai latar sampai ubin zoom sekarang siap
+    // ubin zoom lain tetap tampil sebagai latar sampai ubin zoom sekarang selesai dirender
     for (const [key, img] of this.tiles) {
       if (wanted.has(key)) continue;
       const tz = Number(key.slice(1, key.indexOf("/")));
@@ -219,14 +247,20 @@ class MapScene extends Phaser.Scene {
         this.tiles.delete(key);
       }
     }
-    while (this.tileTextures.length > MAX_TEXTURES) {
+    while (this.tileTextures.length > MAX_TILES) {
       const old = this.tileTextures.shift()!;
-      if (wanted.has(old) || this.tiles.has(old)) {
+      if (this.tiles.has(old)) {
         this.tileTextures.push(old);
         break;
       }
       this.textures.remove(old);
     }
+
+    if (Math.abs(zoom / (this.labelZoom || 1) - 1) < 0.04) return;
+    this.labelZoom = zoom;
+    const px = 1 / zoom;
+    for (const t of this.districtLabels) t.setVisible(zoom >= 0.45).setScale(px);
+    for (const t of this.cityLabels) t.setVisible(zoom >= 0.2 && zoom < 0.7).setScale(px);
   }
 
   // ---------- jaringan koridor & sorotan ----------
@@ -499,7 +533,7 @@ class MapScene extends Phaser.Scene {
     const world = this.ctl.world;
     const session = this.ctl.session;
 
-    this.updateTiles();
+    this.updateBasemap(zoom);
 
     if (world !== this.drawnFor.world || Math.abs(zoom / this.drawnFor.zoom - 1) > 0.04) {
       if (world) {

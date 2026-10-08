@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { controller } from "@/lib/game/controller";
-import { TILE_ATTRIBUTION } from "@/lib/game/tiles";
 import Briefing from "./Briefing";
 import Hud from "./Hud";
 import LivePanel from "./LivePanel";
@@ -45,7 +44,8 @@ export default function GameApp() {
         </div>
       )}
       <div className="attrib">
-        Peta <a href="https://www.openstreetmap.org/copyright">{TILE_ATTRIBUTION}</a>
+        Peta: batas kecamatan Kemendagri 2020 · jalan ©{" "}
+        <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>
       </div>
     </div>
   );
