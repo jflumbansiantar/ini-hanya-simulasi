@@ -62,12 +62,13 @@ npm run check:missions      # validasi semua misi (+30 variasi acak per misi)
 npm run generate:missions   # buat ulang 100 misi (deterministik)
 ```
 
-Ubin peta default diambil dari OpenStreetMap (`tile.openstreetmap.org`, gratis
-tanpa API key) lalu digelapkan supaya cocok dengan tema game. Sumber lain bisa
-dipakai lewat `NEXT_PUBLIC_TILE_URL` (dan `NEXT_PUBLIC_TILE_TINT`,
-`NEXT_PUBLIC_TILE_ATTRIBUTION`); lihat `lib/game/tiles.ts`, termasuk contoh CARTO
-gelap yang sekarang butuh API key. Tanpa akses internet, game tetap bisa
-dimainkan dengan latar gelap polos.
+Peta dasar adalah data vektor statis milik game (`public/basemap.json`), jadi
+game tidak mengambil ubin peta dari server luar mana pun. Isinya daratan, laut,
+danau, batas & nama kecamatan/kota (batas kecamatan Kemendagri 2020, dari
+github.com/Alf-Anas/batas-administrasi-indonesia) dan jaringan jalan dari
+geometri koridor TJ (© OpenStreetMap contributors). Untuk membuat ulang:
+unduh `2020/Batas Kecamatan SHP.zip` dari repositori itu, ekstrak, lalu
+`npm run build:basemap -- "<folder hasil ekstrak>"`.
 
 ## Struktur
 
@@ -86,6 +87,7 @@ dimainkan dengan latar gelap polos.
 | `components/game/phaserGame.ts` | Scene Phaser: ubin peta, koridor, halte, bus, pemain, kamera |
 | `components/game/*.tsx` | UI: menu misi, briefing, HUD, panel rencana/real-time, hasil |
 | `scripts/generate-missions.ts` | Generator misi: aturan per bab, pemasangan rintangan, misi buatan tangan |
+| `scripts/build-basemap.ts` | Membuat peta dasar statis `public/basemap.json` |
 | `scripts/check-missions.ts` | Cek setiap misi punya solusi dan mesin = solver |
 
 Mengubah misi: ubah aturan bab atau daftar misi buatan tangan di
